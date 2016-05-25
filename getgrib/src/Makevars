@@ -1,0 +1,14 @@
+#PKG_LIBS = -L/usr/local -I/usr/local/include -lgrib_api_f90 -lgrib_api
+#PKG_FCFLAGS = -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api
+
+#all: $(SHLIB)
+#getgrib.o: getgrib.f95
+#        gfortran $(PKG_FFLAGS)
+
+
+# export GRIB_API_LIB="/usr/local"
+# export GRIB_API_INCLUDE="/usr/local/include"
+# gfortran -c -I/usr/include grib.f95 -o grib.o  
+# gfortran grib.o -L${GRIB_API_LIB} -lgrib_api_f90 -lgrib_api -o grib.out
+# ./grib.out
+
