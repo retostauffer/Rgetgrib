@@ -2,35 +2,26 @@
 \alias{getgrib-package}
 \alias{getgrib}
 \docType{package}
-\title{
-\packageTitle{getgrib}
-}
-\description{
-\packageDescription{getgrib}
-}
+\title{\packageTitle{getgrib}}
+\description{\packageDescription{getgrib}}
 \details{
-
 The DESCRIPTION file:
 \packageDESCRIPTION{getgrib}
 \packageIndices{getgrib}
-~~ An overview of how to use the package, including the most important ~~
-~~ functions ~~
+
+The package provides some helper functions to extract data from grib1
+files. Originally developed to provide a fortran/R interface for nearest
+neighbor data extraction from grib1 files using the ECMWF grib_api.
+
+Required: EMCWF grib_api installed.
 }
 \author{
 \packageAuthor{getgrib}
-
 Maintainer: \packageMaintainer{getgrib}
 }
-\references{
-~~ Literature or other references for background information ~~
-}
-~~ Optionally other standard keywords, one per line, from file KEYWORDS in ~~
-~~ the R documentation directory ~~
+%%\references{}
 \keyword{ package }
-\seealso{
-~~ Optional links to other man pages, e.g. ~~
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
-}
-\examples{
-~~ simple examples of the most important functions ~~
-}
+%\seealso{
+%}
+%\examples{
+%}
