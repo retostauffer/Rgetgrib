@@ -1,6 +1,47 @@
 
 
 
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+library('getgrib')
+file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+
+
+library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
+
+# Getting number of messages in the grib file. Needed to allocate
+# the corresponding results matrizes and vectors.
+nmessages <- .Fortran('messagecount',file,as.integer(0),PACKAGE='getgrib')[[2]][1]
+
+# First we have to get the dimension of the grid. Note
+# that this function stops the script if not all grids
+# inside the grib file do have the same specification!
+data <- .Fortran('getgridinfo',file,as.integer(rep(0,3)),PACKAGE='getgrib')
+print(data)
+dimension <- data[[2]][1:2]; nsteps <- as.integer(data[[2]][3]); rm(data)
+
+ll <- .Fortran('getgridll',file,as.integer(prod(dimension)),
+         as.numeric(rep(-9999,prod(dimension))),
+         as.numeric(rep(-9999,prod(dimension))),
+         PACKAGE='getgrib')
+lats <- ll[[3]]; lons <- ll[[4]]; rm(ll)
+
+# Getting data now
+values <- matrix(as.numeric(-999.),nsteps,prod(dimension))
+values <- .Fortran('getgriddata',file,values,as.integer(prod(dimension)),
+            as.integer(nsteps),PACKAGE='getgrib')
+values <- values[[2]]
+
+
+
+stop("dev stop")
+
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+# -----------------------------------------------------------------
+
 library('getgrib')
 grbfile <- 'all.grib1'
 

@@ -1,0 +1,4 @@
+
+
+# Ignore compiled one packages
+getgrib_*.*.tar.gz

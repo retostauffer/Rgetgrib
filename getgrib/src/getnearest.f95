@@ -5,7 +5,7 @@
 !
 !
 !
-subroutine getgrib(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES) 
+subroutine getnearest(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES) 
 
    use grib_api
    implicit none
@@ -96,7 +96,7 @@ subroutine getgrib(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES)
    deallocate(values)
    deallocate(indexes)
 
-end subroutine getgrib
+end subroutine getnearest
 
 
 subroutine messagecount(GRBFILE, nmessages)

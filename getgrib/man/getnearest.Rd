@@ -1,5 +1,5 @@
-\name{getgrib}
-\alias{getgrib}
+\name{getnearest}
+\alias{getnearest}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{Extracting Data from Grib1 Files. Currently Nearest Neighbor}
 \description{
@@ -8,7 +8,7 @@
    subfunction.
 }
 \usage{
-   getgrib( x, lon, lat ) 
+   getnearest( x, lon, lat ) 
 }
 \arguments{
    \item{x}{File name of the grib1 file to be concidered.}
@@ -46,7 +46,19 @@
    # Note: rotated_ll around longitude -2/+1, and latitude -1/+1.
    # Therefore only runif coordinates are picked here.
    set.seed(100)
-   res <- getgrib( path, runif(10,-2,2), runif(10,-1,1) )
+   res <- getnearest( path, runif(10,-2,2), runif(10,-1,1) )
+   # Loading data set
+   # This is - as an example - the ECMWF HIRS 2m temperature
+   # forecast of a certain date for step +0, +1, and +2 hours. 
+   path <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+
+   # Define the points you'll interpolate (nearest neighbor) for
+   stations <- data.frame("name" = c("Innsbruck","Saentis"),
+                          "lon"  = c(11.392778,9.343333),
+                          "lat"  = c(47.267222,47.249167)  )
+
+   # Getting neares neighbor from the grib file
+   data <- getnearest(path,stations$lon,stations$lat)
 }
 %- maybe also 'usage' for other objects documented here.
 \author{Reto Stauffer}

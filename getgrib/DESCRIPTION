@@ -1,9 +1,9 @@
 Package: getgrib
 Type: Package
 Title: Getting Nearest Neighbors of a Grib(1) File Via GribAPI/Fortran
-Version: 1.0
+Version: 1.1
 Date: 2016-05-25
 Author: Reto Stauffer
 Maintainer: Reto Stauffer <reto.stauffer@uibk.ac.at>
-Description: Getting nearest neighbor values of a grib file.
+Description: Getting nearest neighbor values of a grib file. Other functions have been added to read grib file information.
 License: GPL-3+

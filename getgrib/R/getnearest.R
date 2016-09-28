@@ -1,18 +1,18 @@
 # -------------------------------------------------------------------
-# - NAME:        getgrib.R
+# - NAME:        getnearest.R
 # - AUTHOR:      Reto Stauffer
 # - DATE:        2016-05-25
 # -------------------------------------------------------------------
-# - DESCRIPTION: Calling getgrib fortran routine to extract data
+# - DESCRIPTION: Calling getnearest fortran routine to extract data
 #                and values from a grib file.
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-05-25, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-05-25 14:35 on thinkreto
+# - L@ST MODIFIED: 2016-09-28 16:55 on pc24-c707
 # -------------------------------------------------------------------
 
 
-getgrib <- function(file, lon, lat) {
+getnearest <- function(file, lon, lat) {
 
    if ( ! length(file) == 1 ) stop("Input argument 'file' has to be length 1!")
    if ( ! file.exists(file) ) stop(sprintf("Sorry, but file %s does not exist",file))
@@ -23,7 +23,7 @@ getgrib <- function(file, lon, lat) {
 
    # Loading fortran library 
    require('getgrib')
-   library.dynam('getgrib',package='getgrib',verbose=TRUE,lib.loc=.libPaths())
+   library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
 
    # Getting number of messages in the grib file. Needed to allocate
    # the corresponding results matrizes and vectors.
