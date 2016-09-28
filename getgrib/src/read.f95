@@ -1,98 +1,3 @@
-!
-!
-!subroutine readgrib(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES) 
-!
-!   use grib_api
-!   implicit none
-!   integer                                      :: infile
-!   integer                                      :: igrib, ios, i
-!
-!   real(8), dimension(:), allocatable  :: nearest_lats, nearest_lons
-!   real(8), dimension(:), allocatable  :: distances, values, lsm_values
-!   integer(kind=kindOfInt), dimension(:), allocatable  :: indexes
-!   real(kind=8)                        :: value
-! 
-!   integer :: msg, nmessages
-!
-!   ! I/O ARGUMENTS
-!   integer, intent(in) :: NSTATIONS ! Number of stations, required to allocate the vectors
-!   character(len=255), intent(in) :: GRBFILE
-!
-!   real(8), intent(inout), dimension(NSTATIONS) :: LONS, LATS ! Vector of longitudes and latitudes
-!   real(8), intent(inout), dimension(NMESSAGES,NSTATIONS) :: RES  ! Return values
-!   integer, intent(inout), dimension(NMESSAGES,7) :: PARAM
-!   integer :: paramId, dataDate, dataTime, startStep, endStep
-!
-!   ! Allocating variables needed inside this script 
-!   allocate(nearest_lats(NSTATIONS))
-!   allocate(nearest_lons(NSTATIONS))
-!   allocate(distances(NSTATIONS))
-!   allocate(lsm_values(NSTATIONS))
-!   allocate(values(NSTATIONS))
-!   allocate(indexes(NSTATIONS))
-!
-!   ! Open grib file. If not readable or not found: exit with exit code 9
-!   call grib_open_file(infile, GRBFILE,'r',ios)
-!   if ( ios .ne. 0 ) then
-!      print *, 'Problems reading the input file. Not found or not readable'
-!      stop
-!   endif
-! 
-!   ! Counting number of messages inside the grib file
-!   call grib_count_in_file(infile,nmessages,ios)
-!   if ( ios .ne. 0 ) then
-!      print *, "Problems counting the messages in the grib file. Stop."
-!      stop
-!   endif
-! 
-!   ! Some output
-!   do msg=1,nmessages,1
-!
-!
-!      ! Extracting information
-!      call grib_new_from_file(infile,igrib)
-!
-!      ! Getting meta information
-!      call grib_get_int(igrib,'indicatorOfParameter',   PARAM(msg,1))
-!      call grib_get_int(igrib,'indicatorOfTypeOfLevel', PARAM(msg,2))
-!      call grib_get_int(igrib,'level',                  PARAM(msg,3))
-!      call grib_get_int(igrib,'dataDate',               PARAM(msg,4))
-!      call grib_get_int(igrib,'dataTime',               PARAM(msg,5))
-!      call grib_get_int(igrib,'startStep',              PARAM(msg,6))
-!      call grib_get_int(igrib,'endStep',                PARAM(msg,7))
-!
-!      !PARAM(msg,1) = paramId
-!      !PARAM(msg,2) = dataDate
-!      !PARAM(msg,3) = dataTime
-!      !PARAM(msg,4) = startStep
-!      !PARAM(msg,5) = endStep
-!
-!      ! Getting the data itself
-!      call grib_find_nearest(igrib, .false., LATS, LONS, &
-!               nearest_lats, nearest_lons,lsm_values, distances, indexes, ios)
-!      call grib_release(igrib)
-!
-!      ! Write results onto the INTENT(INOUT) objects
-!      do i=1,NSTATIONS
-!         RES(msg,i) = lsm_values(i)
-!         if ( msg .eq. 1 ) then
-!            LONS(i)    = nearest_lons(i)
-!            LATS(i)    = nearest_lats(i)
-!         endif
-!         !print*,LATS(i), LONS(i), nearest_lats(i), nearest_lons(i), distances(i), lsm_values(i), values(i)
-!      end do
-!   end do
-!   call grib_close_file(infile)
-!  
-!   deallocate(nearest_lats)
-!   deallocate(nearest_lons)
-!   deallocate(distances)
-!   deallocate(lsm_values)
-!   deallocate(values)
-!   deallocate(indexes)
-!
-!end subroutine readgrib
-
 
 ! -------------------------------------------------------------------
 ! Returns distinct number of elements given 'hash' and grib file
@@ -135,7 +40,12 @@ subroutine getgridinfo(GRBFILE, IINFO)
 
    ! I/O ARGUMENTS
    character(len=255), intent(in) :: GRBFILE
-   integer, intent(inout), dimension(3) :: IINFO
+   ! Using:
+   ! (1) for Ni (number of rows)
+   ! (2) for Nj (number of cols)
+   ! (3) for step (number of different forecast lead times)
+   ! (4) for perturbations (number of different members)
+   integer, intent(inout), dimension(4) :: IINFO
 
    ! Function
    integer :: GIGS
@@ -183,6 +93,10 @@ subroutine getgridinfo(GRBFILE, IINFO)
    call grib_index_create(idx,GRBFILE,'step')
    IINFO(3) = GIGS(idx,'step')
 
+   ! Count number of different perturbations (ensemble)
+   call grib_index_create(idx,GRBFILE,'perturbationNumber')
+   IINFO(4) = GIGS(idx,'perturbationNumber')
+
 end subroutine getgridinfo
 
 ! -------------------------------------------------------------------
@@ -226,7 +140,7 @@ end subroutine getgridll
 ! -------------------------------------------------------------------
 ! Returns latitude and longitude vector for all grids
 ! -------------------------------------------------------------------
-subroutine getgriddata(GRBFILE,VALUES,NELEM,NSTEP)
+subroutine getgriddata(GRBFILE,META,VALUES,NELEM,NROWS)
 
    use grib_api
 
@@ -234,21 +148,28 @@ subroutine getgriddata(GRBFILE,VALUES,NELEM,NSTEP)
 
    integer :: infile, igrib, ios, iret
    integer :: count, idx, currow 
-   integer :: currstep
-   integer :: nsteps
+   integer :: curstep, curpert, curperm
+   integer :: nsteps, nperturbations
 
    character(len=20) :: currshortName
-   integer, dimension(:), allocatable :: steps
-   real(8), dimension(:), allocatable :: lats, lons
+   integer, dimension(:), allocatable   :: steps, perturbations
+   real(8), dimension(:), allocatable   :: lats, lons
+   integer, dimension(:,:), allocatable :: spgrid ! steps/perturbations grid
 
    ! I/O variables
-   integer, intent(in) :: NELEM, NSTEP
-   real(8), intent(inout), dimension(NSTEP,NELEM) :: VALUES
+   ! NELEM:  number of grid points (Ni times Nj)
+   ! NROWS:  number of 'rows' for VALUES/META. Number of steps * number of perturbations
+   ! VALUES: real matrix to store the values (one message per line)
+   ! META:   integer matrix to store meta information (step and perturbation)
+   integer, intent(in)                            :: NELEM, NROWS
+   real(8), intent(inout), dimension(NROWS,NELEM) :: VALUES
+   integer, intent(inout), dimension(NROWS,2)     :: META
 
    character(len=255), intent(in) :: GRBFILE
 
    ! Function values
    integer :: arrayPositionInt
+   integer :: matrixPositionInt
 
    ! Open grib file. If not readable or not found: exit with exit code 9
    call grib_open_file(infile, GRBFILE,'r',ios)
@@ -263,6 +184,16 @@ subroutine getgriddata(GRBFILE,VALUES,NELEM,NSTEP)
    allocate(steps(nsteps))
    call grib_index_get(idx,'step',steps)
 
+   ! Getting all different perturbations in the file
+   call grib_index_create(idx,GRBFILE,'perturbationNumber')
+   call grib_index_get_size(idx,'perturbationNumber',nperturbations)
+   allocate(perturbations(nperturbations))
+   call grib_index_get(idx,'perturbationNumber',perturbations)
+
+   ! Create steps/perturbations grid
+   allocate(spgrid(nperturbations*nsteps,2))
+   call expandGrid(spgrid,steps,nsteps,perturbations,nperturbations)
+
    ! Getting first grib message
    call grib_index_create(idx,GRBFILE,'shortName')
    call grib_index_select(idx,'shortName','2t')
@@ -274,19 +205,25 @@ subroutine getgriddata(GRBFILE,VALUES,NELEM,NSTEP)
    ! Open/calling grib file
    call grib_new_from_file(infile,igrib)
    call grib_new_from_index(idx,igrib, iret)
+   count = 0 ! Init value
    do while (iret /= GRIB_END_OF_INDEX)
       count=count+1
       call grib_get(igrib,'shortName',currshortName)
-      call grib_get(igrib,'step',currstep)
-      write(*,'(A,A,A,i3,A,i4,A,i3)') 'shortName=',trim(currshortName),&
-              '   step='  ,currstep
+      call grib_get(igrib,'step',curstep)
+      call grib_get(igrib,'perturbationNumber',curperm)
+      call grib_get(igrib,'perturbationNumber',curpert)
+      write(*,'(A,A,A,i3,A,i3)') 'shortName=',trim(currshortName),&
+              '   step='  ,curstep, '   member=', curpert
    
       ! Looking for position of step of the current message in 'steps'
       ! which corresponds to the row of the output data matrix.
-      currow = arrayPositionInt(currstep,steps,size(steps))
+      currow = matrixPositionInt(curstep,curperm,spgrid,size(spgrid,1),size(spgrid,2))
       if ( currow .lt. 1 ) then
          print *, "[!] Could not find step position. Stop."; stop 8
       end if
+
+      call grib_get_int(igrib, 'step', META(currow,1))
+      call grib_get_int(igrib, 'perturbationNumber', META(currow,2))
 
       ! Reading data
       call grib_get_data_real8(igrib, lats, lons, VALUES(currow,:), ios)
@@ -304,6 +241,10 @@ subroutine getgriddata(GRBFILE,VALUES,NELEM,NSTEP)
 
 end subroutine getgriddata
 
+! -------------------------------------------------------------------
+! Returns the position of the integer value 'neelde' in the integer
+! array 'haystack' - or a negative value.
+! -------------------------------------------------------------------
 integer function arrayPositionInt(needle,haystack,n)
    implicit none
    integer :: needle, i, n
@@ -317,7 +258,51 @@ integer function arrayPositionInt(needle,haystack,n)
    enddo
 end function
 
+! -------------------------------------------------------------------
+! Similar to arrayPositionInt, but returns the position of the row
+! where the first row of 'grid' corresponds to 'A', and the second
+! row of 'grid' corresponds to 'B'. Or a negative value if the 
+! combination cannot be found.
+! -------------------------------------------------------------------
+integer function matrixPositionInt(A,B,grid,gridi,gridj)
+   implicit none
+   integer :: A, B, gridi, gridj
+   integer :: i, j, row
+   integer, dimension(gridi,gridj) :: grid
+   matrixPositionInt = -9
+   do i=1,gridI
+   do j=1,gridJ
+      row = (i-1)*j+j
+      if ( grid(row,1) .eq. A .and. grid(row,2) .eq. B ) then
+         matrixPositionInt = row
+         return
+      end if
+   enddo
+   enddo
+end function
 
+! -------------------------------------------------------------------
+! Expanding a grid from two integer vectors. The grid contains
+! each dimA/dimB combination available.
+! -------------------------------------------------------------------
+subroutine expandGrid(grid,dimA,nA,dimB,nB)
+   implicit none
+
+   integer :: i, j
+   
+   ! I/O variables
+   integer, intent(in)                        :: nA, nB
+   integer, intent(inout), dimension(nA)      :: dimA
+   integer, intent(inout), dimension(nB)      :: dimB
+   integer, intent(inout), dimension(nA*nB,2) :: grid
+
+   do i = 1, nA
+   do j = 1, nB
+      grid( (i-1)*j+j, 1)    = dimA(i)
+      grid( (i-1)*j+j, 2)    = dimB(j)
+   end do
+   end do
+end subroutine expandGrid
 
 
 
