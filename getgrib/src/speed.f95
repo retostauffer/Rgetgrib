@@ -273,6 +273,10 @@ subroutine speedgetgriddata(GRBFILE,SHORTNAME,LATS,LONS,META,VALUES,NELEM,NROWS)
    allocate(spgrid(nperturbations*nsteps,2))
    call expandGrid(spgrid,steps,nsteps,perturbations,nperturbations)
 
+   do i = 1,size(spgrid,1)
+      print *, spgrid(i,:)
+   enddo
+
    ! Open/calling grib file
    call grib_new_from_file(infile,igrib)
    call grib_new_from_index(idx,igrib, iret)
@@ -289,6 +293,7 @@ subroutine speedgetgriddata(GRBFILE,SHORTNAME,LATS,LONS,META,VALUES,NELEM,NROWS)
    
       ! Looking for position of step of the current message in 'steps'
       ! which corresponds to the row of the output data matrix.
+      print *, "     -> ",curstep,curperm
       currow = matrixPositionInt(curstep,curperm,spgrid,size(spgrid,1),size(spgrid,2))
       if ( currow .lt. 1 ) then
          print *, "[!] Could not find step position. Stop."; stop 8
