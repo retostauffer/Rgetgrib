@@ -57,42 +57,8 @@ doit <- function( file ) {
 t1 <- system.time( x <- doit(file1) )
 t2 <- system.time( x <- doit(file2) )
 
-doit2 <- function(file) {
-   # what do i need for getgriddata.
-   # nsteps, nperturbations, dimension.
-   x <- as.integer(-999)
-   x <- .Fortran('speed',file,'2t',x,x,x,x)
-   nsteps         <- x[[3]]
-   nperturbations <- x[[4]]
-   dimension <- c(x[[5]],x[[6]])
-   cat(sprintf("   - nsteps         %5d\n",nsteps))
-   cat(sprintf("   - nperturbations %5d\n",nperturbations))
-   cat(sprintf("   - gridsize       %dx%d\n",dimension[1],dimension[2]))
-
-   print(system.time(
-      tmpF   <- .Fortran('speedgetgriddata',file,'2t',
-                  as.numeric(rep(-999.,prod(dimension))), # latitude
-                  as.numeric(rep(-999.,prod(dimension))), # longitude
-                  matrix(as.integer(-999),as.integer(nsteps*nperturbations),2), # meta information
-                  matrix(as.numeric(-999.),nsteps*nperturbations,prod(dimension)), # data (values)
-                  as.integer(prod(dimension)), # number of grid points (col dimension)
-                  as.integer(nsteps*nperturbations), # steps times permutations (row dimension)
-                  PACKAGE='getgrib')
-   )) 
-      reto <<- tmpF
-}
-
-t3 <- system.time( x <- doit2(file1) )
-t4 <- system.time( x <- doit2(file2) )
-
-
 cat('\n===============================')
 cat('\n---------- t1\n')
 print(t1)
 cat('\n---------- t2\n')
 print(t2)
-cat('\n===============================')
-cat('\n---------- t3\n')
-print(t3)
-cat('\n---------- t4\n')
-print(t4)
