@@ -1,59 +1,4 @@
 
-# -------------------------------------------------------------------
-# Helper function. We have loaded the grid dimension (number of
-# rows and columns) from the grib file, stored in 'dimension',
-# vector with two integer elements (ncol,nrow).
-# Furthermore for each grid point longitude and latitude have
-# been loaded. If the unique(longitude) and unique(latitude)
-# length is equivalent to the 'dimension' argument we have a 
-# regular longitude latitude grid. This is required for some
-# further processing steps like e.g., creating a raster object
-# from the data.
-# @arg dimension.  vector with two elements. c(ncol,nrow)
-# @arg lats. vector with latitudes corresponding to the gridpoints.
-# @arg lons. vector with longitudes corresponding to the gridpoints.
-# @arg verbose. If set, some output will be printed.
-# @reutrn Returns boolean TRUE if the grid seems to be on a regular
-#         longitude/latitude grid, FALSE else.
-# -------------------------------------------------------------------
-   is_regular_ll_grid <- function(dimension,lats,lons,verbose=FALSE) {
-      ll <- c(length(unique(lons)),length(unique(lats)))
-      if ( verbose ) {
-         if ( all(ll == dimension) ) {
-            message("Loaded data seem to be on regular latlons grid.")
-         } else {
-            message("Loaded data seem to be on a rotated or non-ll grid.")
-         }
-      }
-      return( all(ll == dimension) )
-   }
-
-# -------------------------------------------------------------------
-# Computes grid increments in longitude and latitude direction.
-# @arg dimension.  vector with two elements. c(ncol,nrow)
-# @arg lats. vector with latitudes corresponding to the gridpoints.
-# @arg lons. vector with longitudes corresponding to the gridpoints.
-# @reutrn Returns vector with two elements. First element is
-#         increment in latitude direction, second one in longitude
-#         direction.
-# -------------------------------------------------------------------
-   get_grid_increments <- function(dimension,lats, lons) {
-      if ( ! is_regular_ll_grid(dimension,lats,lons) )
-         stop("Sorry, no regular ll grid. Cannot compute grid increments!")
-      # Latitude increment
-      delta_lat <- diff(sort(unique(lats)))
-      if ( length(unique(delta_lat)) != 1 )
-         stop("No uniform grid spacing in latitude direction! Stop.")
-      # Longitude increment
-      delta_lon <- diff(sort(unique(lons)))
-      if ( length(unique(delta_lon)) != 1 )
-         stop("No uniform grid spacing in longitude direction! Stop.")
-      # Else return
-      return( c(unique(delta_lat),unique(delta_lon)) )
-   }
-
-
-
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
@@ -63,6 +8,10 @@ shortName <- '2t'
 
 file <- 'data/hc.grib'
 shortName <- 'tp'
+
+test <- getdata(file,shortName)
+rast <- gribdata2raster(test)
+stop('dvstop')
 
    
    # Loading fortran library
