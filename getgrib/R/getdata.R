@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-29 13:58 on thinkreto
+# - L@ST MODIFIED: 2016-09-29 14:53 on pc24-c707
 # -------------------------------------------------------------------
 
 
@@ -32,10 +32,10 @@ getdata <- function(file,shortName) {
    # Estracting required information
    dimension      <- Freturn[[2]][1:2]
    nsteps         <- as.integer(Freturn[[2]][3])
-   nperturbations <- as.integer(Freturn[[2]][4])
-   ndates         <- as.integer(Freturn[[2]][5])
-   ntimes         <- as.integer(Freturn[[2]][6])
-   ntotal <- as.integer(nsteps*nperturbations*ndates*ntimes)
+   nmembers       <- as.integer(Freturn[[2]][4])
+   ninitdates     <- as.integer(Freturn[[2]][5])
+   ninithours     <- as.integer(Freturn[[2]][6])
+   ntotal <- as.integer(nsteps*nmembers*ninitdates*ninithours)
 
    # ---------------------------------------------
    # Getting longitude and latitude definition
@@ -60,9 +60,19 @@ getdata <- function(file,shortName) {
    colnames(data) <- c('initdate','inithour','step','member',paste('gp',1:(ncol(data)-4),sep=''))
    print(head(data[,1:6]))
 
+   # ---------------------------------------------
+   # Create vector of unique dates, hours, steps, and members
+   steps     <- sort(unique(data[,'step']))
+   initdates <- sort(unique(data[,'initdate']))
+   inithours <- sort(unique(data[,'inithour']))
+   members   <- sort(unique(data[,'member']))
+
+   # ---------------------------------------------
+   # Create final object
    result <- list('data'=data,'lats'=lats,'lons'=lons,'dimension'=dimension)
    class(data) <- c('gribdata','matrix')
-   keys <- c('shortName','dimension','lats','lons','file','ndates','ntimes','nsteps','nperturbations')
+   keys <- c('shortName','dimension','lats','lons','file','initdates','ninitdates',
+             'inithours','ninithours','steps','nsteps','members','nmembers')
    for ( key in keys ) eval(parse(text=sprintf("attr(data,'%s') <- %s",key,key)))
    return(data)
 }
