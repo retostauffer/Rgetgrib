@@ -7,18 +7,18 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-30 14:42 on pc24-c707
+# - L@ST MODIFIED: 2016-09-30 20:13 on thinkreto
 # -------------------------------------------------------------------
 
 
 # -------------------------------------------------------------------
 # Reading data from grib file
 # -------------------------------------------------------------------
-getdata <- function(file,what) {
+getdata <- function(file,what,scale) {
    if ( is.character(what) ) {
-      return( getdataByShortName(file,shortName=what[1L]) )
+      return( getdataByShortName(file,what=what[1L],scale) )
    } else if ( is.numeric(what) || is.integer(what) ) {
-      return( getdataByMessageNumber(file,messagenumber=what[1L]) )
+      return( getdataByMessageNumber(file,what=what[1L],scale) )
    } else {
       stop("Unknown input to getgrib::getdata()")
    }
@@ -28,7 +28,10 @@ getdata <- function(file,what) {
 # -------------------------------------------------------------------
 # Reading data from grib file, selector by shortName
 # -------------------------------------------------------------------
-getdataByShortName <- function(file,shortName) {
+getdataByShortName <- function(file,what,scale) {
+
+   # Iput:
+   shortName <- what
 
    # Loading fortran library
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
@@ -69,6 +72,12 @@ getdataByShortName <- function(file,shortName) {
                        PACKAGE='getgrib')
 
    # ---------------------------------------------
+   # If user sets 'scale': scale data. Can be any
+   # vaid mathematical expression.
+   if ( ! missing(scale) )
+      eval(parse(text=sprintf("Freturn[[4]] <- Freturn[[4]] %s",scale)))
+
+   # ---------------------------------------------
    # Combine meta information and the values form the grib fields
    data <- cbind(Freturn[[3]],Freturn[[4]]); rm(Freturn)
    colnames(data) <- c('initdate','inithour','step','member',paste('gp',1:(ncol(data)-4),sep=''))
@@ -95,7 +104,10 @@ getdataByShortName <- function(file,shortName) {
 # Reading data from grib file. Only returns message number
 # "messagenumber" (integer) 
 # -------------------------------------------------------------------
-getdataByMessageNumber <- function(file,messagenumber) {
+getdataByMessageNumber <- function(file,what,scale) {
+
+   # Input:
+   messagenumber <- what
 
    # Loading fortran library
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
@@ -123,6 +135,13 @@ getdataByMessageNumber <- function(file,messagenumber) {
                     rep(as.numeric(-999.),prod(dimension)), # lons
                     as.integer(prod(dimension)), # number of grid points (col dimension)
                     PACKAGE='getgrib')
+
+   # ---------------------------------------------
+   # If user sets 'scale': scale data. Can be any
+   # vaid mathematical expression.
+   if ( ! missing(scale) )
+      eval(parse(text=sprintf("Freturn[[4]] <- Freturn[[4]] %s",scale)))
+
    # ---------------------------------------------
    # Create "gribdata" object
    # First combine meta information and data
@@ -258,6 +277,42 @@ gribdata2raster.gribdata <- function(x,...) {
 
 }
 
+
+# -------------------------------------------------------------------
+# Deaccumulate data from function 'getdata' (gribdata objects).
+# -------------------------------------------------------------------
+deaccumulate <- function(x,...) UseMethod('deaccumulate')
+deaccumulate.gribdata <- function(x,deaccumulation=24,setzero=FALSE,zeroval=0.0001) {
+   # Loading shared library
+   library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
+
+   # Rearange the data
+   meta <- matrix(as.integer(x[,1:4]),ncol=4)
+   data <- x[,5:ncol(x)]
+
+   Fresult <- .Fortran('deaccumulate',meta,data,
+                       rep(as.integer(0),nrow(data)), # success: returns 0/1 if deaccumulation was possible or not
+                       as.integer(nrow(data)),as.integer(ncol(data)), # data dimension (and meta rows)
+                       as.integer(deaccumulation), # hours to deaccumulate
+                       as.integer(setzero), # setzero: set values below 0 to 0
+                       as.numeric(zeroval), # values smaller set to this value (if setzero>0)
+                       PACKAGE='getgrib')
+
+   # Keep attributes, bind data
+   hold <- attributes(x)
+   x <- cbind(Fresult[[1]],Fresult[[2]])
+
+   # Dropping 'non-deaccumulated' messages (rows)
+   x <- x[which(Fresult[[3]]==1),]
+
+   # Note: as we dropped the 'non deaccumulated' messages
+   # we cannot add the dim attribute. Not required.
+   for ( nam in names(hold) ) {
+      if ( nam == 'dim' ) next
+      attr(x,nam) <- hold[[nam]]
+   }
+   return(x)
+}
 
 
 

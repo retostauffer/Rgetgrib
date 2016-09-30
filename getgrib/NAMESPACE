@@ -2,6 +2,7 @@
 
 export(
    "gribdata2raster",
+   "deaccumulate",
    "getdata",
    "grib_ls",
    "getnearest",
@@ -13,5 +14,6 @@ export(
     S3method("is_regular_ll_grid",  "gribdata")
     S3method("get_grid_increments", "gribdata")
     S3method("gribdata2raster",     "gribdata")
+    S3method("deaccumulate",        "gribdata")
 
 

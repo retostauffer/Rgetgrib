@@ -447,7 +447,7 @@ end function
 
 
 ! -------------------------------------------------------------------
-! Expanding a grid from two integer vectors. The grid contains
+! Expanding a grid from four integer vectors. The grid contains
 ! each dimA/dimB/dimC/dimD combination available.
 ! -------------------------------------------------------------------
 subroutine expandGrid4(grid,dimA,nA,dimB,nB,dimC,nC,dimD,nD)
@@ -456,11 +456,11 @@ subroutine expandGrid4(grid,dimA,nA,dimB,nB,dimC,nC,dimD,nD)
    integer :: a, b, c, d, row
    
    ! I/O variables
-   integer, intent(in)                   :: nA, nB, nC, nD
-   integer, intent(inout), dimension(nA) :: dimA
-   integer, intent(inout), dimension(nB) :: dimB
-   integer, intent(inout), dimension(nC) :: dimC
-   integer, intent(inout), dimension(nD) :: dimD
+   integer, intent(in)                :: nA, nB, nC, nD
+   integer, intent(in), dimension(nA) :: dimA
+   integer, intent(in), dimension(nB) :: dimB
+   integer, intent(in), dimension(nC) :: dimC
+   integer, intent(in), dimension(nD) :: dimD
    integer, intent(inout), dimension(nA*nB*nC*nD,4) :: grid
 
    do a = 1, nA
@@ -477,3 +477,91 @@ subroutine expandGrid4(grid,dimA,nA,dimB,nB,dimC,nC,dimD,nD)
    end do
    end do
 end subroutine expandGrid4
+
+
+! -------------------------------------------------------------------
+! Deaccumulating data.
+! META: integer(NI,4). Elements are 'dataDate','dataTime','step','member')
+! DATA: real(NI,NJ). Data (each row is one field/message)
+! SUCCESS: integer(NI). If deaccumulation was not possible: return 0, else 1
+! NI/NJ: data dimension.
+! DEACCUMULATION: integer, hours of deaccumulation.
+! SETZERO: integer, if .gt. 0 values below 0 will be set to 0
+! -------------------------------------------------------------------
+subroutine deaccumulate(META,DATA,SUCCESS,NI,NJ,DEACCUMULATION,SETZERO,ZEROVAL)
+
+   implicit none
+
+   ! I/O Values
+   integer, intent(in) :: NI, NJ, DEACCUMULATION, SETZERO
+   integer, intent(in), dimension(NI,4) :: META
+   integer, intent(inout), dimension(NI) :: SUCCESS
+   real(8), intent(inout), dimension(NI,NJ) :: DATA
+   real(8), intent(in) :: ZEROVAL
+
+   ! Internal variables
+   integer :: row, i, j
+   real(8), dimension(:,:), allocatable :: DATACOPY
+
+   ! Function values
+   integer matrixPositionInt4
+
+   ! Copy original input data first
+   allocate(DATACOPY(NI,NJ))
+   DATACOPY(:,:) = DATA(:,:)
+   DATA(:,:)     = -9999.
+
+   ! Kill: default all 0 (deaccumulation not perormed on this message/row)
+   ! set to 1 if deaccumulated.
+
+   ! Looping over the rows and look if a message can be
+   ! accumulated or not. If possible: do so. If not, set
+   ! all values to -999.
+   do i = 1, NI
+      ! Check if current row minus DEACCUMULATION exists or not.
+      ! E.g., if current step is 48, DEACCUMULATION=24, then we need
+      ! to find the same entry but 24 hours later (with same dataDate,
+      ! dataTime, and member). Step is on META(i,3)
+      row = matrixPositionInt4(META(i,1),META(i,2),META(i,3) - DEACCUMULATION, &
+            META(i,4),META,size(META,1),size(META,2))
+
+      ! If not found, skip
+      if ( row .le. 0 ) cycle
+
+      ! Deaccumulate
+      DATA(i,:) = DATACOPY(i,:) - DATACOPY(row,:)
+      if ( SETZERO .gt. 0 ) then
+         do j = 1, NJ
+            if ( DATA(i,j) .lt. ZEROVAL ) DATA(i,j) = 0.
+         end do
+      endif
+
+      ! Setting success to 1 for this message
+      SUCCESS(i) = 1
+
+   end do
+
+end subroutine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
