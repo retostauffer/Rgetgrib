@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-30 20:13 on thinkreto
+# - L@ST MODIFIED: 2016-09-30 20:31 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -246,7 +246,6 @@ gribdata2raster.gribdata <- function(x,...) {
                   attr(x,'shortName'),x[,'step'],x[,'member'])
 
    # Cretae one empty grid
-   print(class(x))
    increments <- get_grid_increments(x)
    dimension <- attr(x,'dimension')
    lats      <- attr(x,'lats')
