@@ -4,16 +4,16 @@
 \title{Checking if Input Object of Type \code{gribdata} is a Regular LatLon Grid}
 \description{
    Checking weather the object of class \code{gribdata} read by 
-   \code{getgrib::getdata} is a regular latlon grid.
+   \code{\link{getdata}} is a regular latlon grid.
 }
 \usage{
    ## Usage
-   is_regular_ll_grid(x)
+   is_regular_ll_grid(x, ...)
    ## Verbose
    is_regular_ll_grid(x,verbose=FALSE)
 }
 \arguments{
-   \item{x}{Object of class \code{gribdata} from \code{getgrib::getdata}.}
+   \item{x}{Object of class \code{gribdata} from \code{\link{getdata}}.}
    \item{verbose}{Boolean, default \code{FALSE}. If set to \code{TRUE} a message
       will be printed.}
    \item{...}{Currently not in use.}

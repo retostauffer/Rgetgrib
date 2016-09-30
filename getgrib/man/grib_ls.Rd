@@ -61,6 +61,11 @@
    grib_ls(file,parameters=c('Ni','Nj','step'))
    grib_ls(file,where='step=12,shortName!=2t')
    grib_ls(file,where=list('step'=12,'shortName'='2t'))
+
+   ## See "getdata" manual to see why I've did this.
+}
+\seealso{
+   \code{\link{getdata}}
 }
 %- maybe also 'usage' for other objects documented here.
 \author{Reto Stauffer}

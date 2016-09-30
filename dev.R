@@ -6,6 +6,63 @@ library('getgrib')
 file <- 'getgrib/data/ECEPS_12.grib'
 shortName <- '2t'
 
+   # Loading fortran library
+   library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
+
+   # ---------------------------------------------
+   # Getting number of messages in the grib file. Needed to allocate
+   # the corresponding results matrizes and vectors.
+   nmessages <- .Fortran('messagecount',file,as.integer(0),PACKAGE='getgrib')[[2]][1]
+
+   # ---------------------------------------------
+   # First we have to get the dimension of the grid. Note
+   # that this function stops the script if not all grids
+   # inside the grib file do have the same specification!
+   Freturn <- .Fortran('getgridinfo',file,as.integer(rep(0,6)),PACKAGE='getgrib')
+   # Estracting required information
+   dimension      <- Freturn[[2]][1:2]
+
+   # ---------------------------------------------
+   # Getting data
+   Freturn <- .Fortran('getgriddataByMessageNumber',file,as.integer(10),
+                    paste(rep(" ",20),collapse=""),
+                    rep(as.integer(-999),4), # meta information
+                    rep(as.numeric(-999.),prod(dimension)), # data (values)
+                    rep(as.numeric(-999.),prod(dimension)), # lats
+                    rep(as.numeric(-999.),prod(dimension)), # lons
+                    as.integer(prod(dimension)), # number of grid points (col dimension)
+                    PACKAGE='getgrib')
+
+   # ---------------------------------------------
+   # Create "gribdata" object
+   # First combine meta information and data
+   data <- t(c(Freturn[[4]],Freturn[[5]]))
+   # Adding class and labels
+   colnames(data) <- c("initdate","inithour","step","member",paste("gp",1:(ncol(data) - 4),sep = ""))
+   class(data) <- c("gribdata","matrix")
+
+   # ---------------------------------------------
+   # Create vector of unique dates, hours, steps, and members
+   shortName <- trim(Freturn[[3]])
+   lats      <- as.numeric(Freturn[[6]])
+   lons      <- as.numeric(Freturn[[7]])
+   steps     <- data[1,'step'];     nsteps     <- 1
+   initdates <- data[1,'initdate']; ninitdates <- 1
+   inithours <- data[1,'inithour']; ninithours <- 1
+   members   <- data[1,'member'];   nmembers   <- 1
+
+   # ---------------------------------------------
+   # Create final object
+   class(data) <- c('gribdata','matrix')
+   keys <- c('shortName','dimension','lats','lons','file','initdates','ninitdates',
+             'inithours','ninithours','steps','nsteps','members','nmembers')
+   for ( key in keys ) eval(parse(text=sprintf("attr(data,'%s') <- %s",key,key)))
+   
+   print(Freturn[[3]])
+   print(head(Freturn[[5]]))
+   stop("x")
+
+
 #file <- 'data/hc.grib'
 #shortName <- 'tp'
 

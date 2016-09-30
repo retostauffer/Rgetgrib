@@ -162,8 +162,9 @@ end subroutine getgridll
 
 ! -------------------------------------------------------------------
 ! Returns latitude and longitude vector for all grids
+! Selector on shortName at the moment.
 ! -------------------------------------------------------------------
-subroutine getgriddata(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
+subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
 
    use grib_api
 
@@ -171,7 +172,7 @@ subroutine getgriddata(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
 
    integer :: infile, igrib, ios, iret, i
    integer :: count, idx, currow 
-   integer :: curdate, curtime, curstep, curpert, curperm
+   integer :: curdate, curtime, curstep, curpert
    integer :: ndates, ntimes, nsteps, nperturbations
 
    character(len=20) :: currshortName
@@ -246,7 +247,6 @@ subroutine getgriddata(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
       count=count+1
       call grib_get_string(igrib,'shortName',currshortName)
       call grib_get_int(igrib,'step',curstep)
-      call grib_get_int(igrib,'perturbationNumber',curperm)
       call grib_get_int(igrib,'perturbationNumber',curpert)
       call grib_get_int(igrib,'dataDate',curdate)
       call grib_get_int(igrib,'dataTime',curtime)
@@ -255,7 +255,7 @@ subroutine getgriddata(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    
       ! Looking for position of step of the current message in 'steps'
       ! which corresponds to the row of the output data matrix.
-      currow = matrixPositionInt4(curdate,curtime,curstep,curperm,spgrid,size(spgrid,1),size(spgrid,2))
+      currow = matrixPositionInt4(curdate,curtime,curstep,curpert,spgrid,size(spgrid,1),size(spgrid,2))
       if ( currow .lt. 1 ) then
          print *, "[!] Could not find step position. Stop."; stop 8
       end if
@@ -277,7 +277,77 @@ subroutine getgriddata(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    call grib_release(igrib)
    call grib_close_file(infile)
 
-end subroutine getgriddata
+end subroutine getgriddataByShortName
+
+
+! -------------------------------------------------------------------
+! Returns latitude and longitude vector for one grib message
+! specified by the MESSAGENUMBER. 
+! -------------------------------------------------------------------
+subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUES,LATS,LONS,NELEM)
+
+   use grib_api
+
+   implicit none
+
+   integer :: infile, igrib, ios, iret, i
+   integer :: count, idx
+   integer :: curdate, curtime, curstep, curpert
+
+   ! I/O variables
+   ! SHORTNAME: string, short name to select.
+   ! META:      integer matrix to store date, hour, step, and member
+   ! VALUES:    real matrix to store data.
+   ! NELEM:     number of grid points (Ni times Nj)
+   ! NROWS:     number of 'rows' for VALUES/META. Number of steps * number of perturbations
+   integer, intent(in)                       :: NELEM, MESSAGENUMBER
+   real(8), intent(inout), dimension(NELEM)  :: VALUES, LATS, LONS
+   integer, intent(inout), dimension(4)      :: META
+   character(len=255), intent(in) :: GRBFILE
+   character(len=20), intent(inout) :: SHORTNAME
+
+   ! Open grib file. If not readable or not found: exit with exit code 9
+   call grib_open_file(infile, GRBFILE,'r',ios)
+   if ( ios .ne. 0 ) then
+      print *, 'Problems reading the input file. Not found or not readable'
+      stop
+   endif
+
+   ! Open/calling grib file
+   count = 0 ! Init value
+
+   do while (iret /= GRIB_END_OF_INDEX)
+      count=count+1
+      call grib_new_from_file(infile,igrib)
+      if ( count .ne. MESSAGENUMBER ) cycle
+
+      ! Getting required meta information
+      call grib_get_string(igrib,'shortName',SHORTNAME)
+      call grib_get_int(igrib,'step',curstep)
+      call grib_get_int(igrib,'perturbationNumber',curpert)
+      call grib_get_int(igrib,'dataDate',curdate)
+      call grib_get_int(igrib,'dataTime',curtime)
+
+      ! Store meta data
+      META = (/curdate,curtime,curstep,curpert/)
+
+      ! Reading data
+      call grib_get_data_real8(igrib, LATS, LONS, VALUES, ios)
+
+      ! Release and take next message
+      call grib_release(igrib)
+      call grib_new_from_index(idx,igrib, iret)
+
+      exit
+   end do
+
+   !!call grib_get_data_real8(igrib, LATS, LONS, values, ios)
+
+   ! Release and close.
+   call grib_release(igrib)
+   call grib_close_file(infile)
+
+end subroutine getgriddataByMessageNumber
 
 
 ! -------------------------------------------------------------------
@@ -407,5 +477,3 @@ subroutine expandGrid4(grid,dimA,nA,dimB,nB,dimC,nC,dimD,nD)
    end do
    end do
 end subroutine expandGrid4
-
-

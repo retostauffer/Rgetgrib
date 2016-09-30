@@ -7,14 +7,28 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-29 14:53 on pc24-c707
+# - L@ST MODIFIED: 2016-09-30 14:42 on pc24-c707
 # -------------------------------------------------------------------
 
 
 # -------------------------------------------------------------------
 # Reading data from grib file
 # -------------------------------------------------------------------
-getdata <- function(file,shortName) {
+getdata <- function(file,what) {
+   if ( is.character(what) ) {
+      return( getdataByShortName(file,shortName=what[1L]) )
+   } else if ( is.numeric(what) || is.integer(what) ) {
+      return( getdataByMessageNumber(file,messagenumber=what[1L]) )
+   } else {
+      stop("Unknown input to getgrib::getdata()")
+   }
+}
+
+
+# -------------------------------------------------------------------
+# Reading data from grib file, selector by shortName
+# -------------------------------------------------------------------
+getdataByShortName <- function(file,shortName) {
 
    # Loading fortran library
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
@@ -47,7 +61,7 @@ getdata <- function(file,shortName) {
 
    # ---------------------------------------------
    # Getting data now
-   Freturn <- .Fortran('getgriddata',file,shortName,
+   Freturn <- .Fortran('getgriddataByShortName',file,shortName,
                        matrix(as.integer(-999),ntotal,4), # meta information
                        matrix(as.numeric(-999.),ntotal,prod(dimension)), # data (values)
                        as.integer(prod(dimension)), # number of grid points (col dimension)
@@ -58,7 +72,6 @@ getdata <- function(file,shortName) {
    # Combine meta information and the values form the grib fields
    data <- cbind(Freturn[[3]],Freturn[[4]]); rm(Freturn)
    colnames(data) <- c('initdate','inithour','step','member',paste('gp',1:(ncol(data)-4),sep=''))
-   print(head(data[,1:6]))
 
    # ---------------------------------------------
    # Create vector of unique dates, hours, steps, and members
@@ -66,13 +79,73 @@ getdata <- function(file,shortName) {
    initdates <- sort(unique(data[,'initdate']))
    inithours <- sort(unique(data[,'inithour']))
    members   <- sort(unique(data[,'member']))
+   messagenumber <- NA
 
    # ---------------------------------------------
    # Create final object
    result <- list('data'=data,'lats'=lats,'lons'=lons,'dimension'=dimension)
    class(data) <- c('gribdata','matrix')
    keys <- c('shortName','dimension','lats','lons','file','initdates','ninitdates',
-             'inithours','ninithours','steps','nsteps','members','nmembers')
+             'inithours','ninithours','steps','nsteps','members','nmembers','messagenumber')
+   for ( key in keys ) eval(parse(text=sprintf("attr(data,'%s') <- %s",key,key)))
+   return(data)
+}
+
+# -------------------------------------------------------------------
+# Reading data from grib file. Only returns message number
+# "messagenumber" (integer) 
+# -------------------------------------------------------------------
+getdataByMessageNumber <- function(file,messagenumber) {
+
+   # Loading fortran library
+   library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
+
+   # ---------------------------------------------
+   # Getting number of messages in the grib file. Needed to allocate
+   # the corresponding results matrizes and vectors.
+   nmessages <- .Fortran('messagecount',file,as.integer(0),PACKAGE='getgrib')[[2]][1]
+
+   # ---------------------------------------------
+   # First we have to get the dimension of the grid. Note
+   # that this function stops the script if not all grids
+   # inside the grib file do have the same specification!
+   Freturn <- .Fortran('getgridinfo',file,as.integer(rep(0,6)),PACKAGE='getgrib')
+   # Estracting required information
+   dimension      <- Freturn[[2]][1:2]
+
+   # ---------------------------------------------
+   # Getting data
+   Freturn <- .Fortran('getgriddataByMessageNumber',file,as.integer(messagenumber),
+                    paste(rep(" ",20),collapse=""),
+                    rep(as.integer(-999),4), # meta information
+                    rep(as.numeric(-999.),prod(dimension)), # data (values)
+                    rep(as.numeric(-999.),prod(dimension)), # lats
+                    rep(as.numeric(-999.),prod(dimension)), # lons
+                    as.integer(prod(dimension)), # number of grid points (col dimension)
+                    PACKAGE='getgrib')
+   # ---------------------------------------------
+   # Create "gribdata" object
+   # First combine meta information and data
+   data <- t(c(Freturn[[4]],Freturn[[5]]))
+   # Adding class and labels
+   colnames(data) <- c("initdate","inithour","step","member",paste("gp",1:(ncol(data) - 4),sep = ""))
+   class(data) <- c("gribdata","matrix")
+
+   # ---------------------------------------------
+   # Create vector of unique dates, hours, steps, and members
+   shortName <- gsub(" ","",Freturn[[3]])
+   lats      <- as.numeric(Freturn[[6]])
+   lons      <- as.numeric(Freturn[[7]])
+   steps     <- data[1,'step'];     nsteps     <- 1
+   initdates <- data[1,'initdate']; ninitdates <- 1
+   inithours <- data[1,'inithour']; ninithours <- 1
+   members   <- data[1,'member'];   nmembers   <- 1
+
+   # ---------------------------------------------
+   # Create final object
+   class(data) <- c('gribdata','matrix')
+   keys <- c('shortName','dimension','lats','lons','file','initdates','ninitdates',
+             'inithours','ninithours','steps','nsteps','members','nmembers','messagenumber')
    for ( key in keys ) eval(parse(text=sprintf("attr(data,'%s') <- %s",key,key)))
    return(data)
 }
@@ -119,7 +192,7 @@ is_regular_ll_grid.gribdata <- function(x,verbose=FALSE) {
 #         increment in latitude direction, second one in longitude
 #         direction.
 # -------------------------------------------------------------------
-get_grid_increments <- function(x,...) UseMethod('get_grid_increments')
+get_grid_increments <- function(x) UseMethod('get_grid_increments')
 get_grid_increments.gribdata <- function(x) {
    dimension <- attr(x,'dimension')
    lats      <- attr(x,'lats')
@@ -146,8 +219,6 @@ get_grid_increments.gribdata <- function(x) {
 gribdata2raster <- function(x,...) UseMethod('gribdata2raster')
 gribdata2raster.gribdata <- function(x,...) {
 
-   require('raster')
-
    # Create raster data if possible
    if ( ! is_regular_ll_grid(x) ) stop("No regular ll grid, can't convert to raster.")
 
@@ -161,12 +232,12 @@ gribdata2raster.gribdata <- function(x,...) {
    dimension <- attr(x,'dimension')
    lats      <- attr(x,'lats')
    lons      <- attr(x,'lons')
-   empty <- raster(nrows = dimension[2], ncols = dimension[1],
+   empty <- raster::raster(nrows = dimension[2], ncols = dimension[1],
                    ymn   = min(lats) - increments[1]/2.,
                    ymx   = max(lats) + increments[1]/2.,
                    xmn   = min(lons) - increments[2]/2.,
                    xmx   = max(lons) + increments[2]/2.,
-                   crs=CRS("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
+                   crs=sp::CRS("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
    # Create raster
    cat(sprintf("Generating %d raster layers now\n",length(layernames)))
    pb <- txtProgressBar(0,length(layernames),style=3)
@@ -174,7 +245,7 @@ gribdata2raster.gribdata <- function(x,...) {
    for ( i in 1:nrow(x) ) {
       setTxtProgressBar(pb,i)
       tmp <- matrix(x[i,5:ncol(x)],nrow=dimension[1],ncol=dimension[2],byrow=F)
-      tmp_raster <- empty; values(tmp_raster) <- t(tmp)
+      tmp_raster <- empty; raster::values(tmp_raster) <- t(tmp)
       attr(tmp_raster,'meta') <- as.list(x[i,1:4])
       names(tmp_raster) <- layernames[i]
       allRaster[[length(allRaster)+1]] <- tmp_raster

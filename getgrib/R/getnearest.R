@@ -8,7 +8,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-05-25, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-28 16:55 on pc24-c707
+# - L@ST MODIFIED: 2016-09-30 14:44 on pc24-c707
 # -------------------------------------------------------------------
 
 
@@ -22,7 +22,6 @@ getnearest <- function(file, lon, lat) {
    if ( length(lon) == 0 ) stop("Input 'lon', 'lat' cannot be of length zero")
 
    # Loading fortran library 
-   require('getgrib')
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
 
    # Getting number of messages in the grib file. Needed to allocate
@@ -38,7 +37,7 @@ getnearest <- function(file, lon, lat) {
    param <- matrix(as.integer(-9999),ncol=7,nrow=nmessages)
 
    # Now calling fortran code
-   x <- .Fortran('getgrib', file, nmessages, nstations, lon, lat, param, val, PACKAGE='getgrib' ) 
+   x <- .Fortran('getnearest', file, nmessages, nstations, lon, lat, param, val, PACKAGE='getgrib' ) 
    closest_lon  <- x[[4]]
    closest_lat  <- x[[5]]
    param        <- x[[6]]

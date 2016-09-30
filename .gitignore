@@ -1,5 +1,8 @@
 
 
+# Ignore check directory
+*.Rcheck
+
 # Ignore compiled one packages
 getgrib_*.*.tar.gz
 data/*

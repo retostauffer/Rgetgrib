@@ -6,4 +6,5 @@ Date: 2016-05-25
 Author: Reto Stauffer
 Maintainer: Reto Stauffer <reto.stauffer@uibk.ac.at>
 Description: Getting nearest neighbor values of a grib file. Other functions have been added to read grib file information.
-License: GPL-3+
+Depends: R (>= 3.0.0), raster, sp
+License: GPL-3

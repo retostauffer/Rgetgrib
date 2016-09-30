@@ -1,1 +1,17 @@
-exportPattern("^[[:alpha:]]+")
+###exportPattern("^[[:alpha:]]+")
+
+export(
+   "gribdata2raster",
+   "getdata",
+   "grib_ls",
+   "getnearest",
+   "get_grid_increments",
+   "is_regular_ll_grid"
+)
+
+# - Methods for sybase object
+    S3method("is_regular_ll_grid",  "gribdata")
+    S3method("get_grid_increments", "gribdata")
+    S3method("gribdata2raster",     "gribdata")
+
+

@@ -4,7 +4,7 @@
 \title{Returns Latitude and Longitude Grid Increments from \code{gribdata} Object}
 \description{
    Returns latitude and longitude grid increments of an object of class
-   \code{gribdata} read by \code{\link{getgrib::getdata}}.
+   \code{gribdata} read by \code{\link{getdata}}.
    Note: only valid for regular latlon grids (see \code{\link{get_grid_increments}}).
 }
 \usage{
@@ -12,7 +12,7 @@
    get_grid_increments(x)
 }
 \arguments{
-   \item{x}{Object of class \code{gribdata} from \code{getgrib::getdata}.}
+   \item{x}{Object of class \code{gribdata} from \code{\link{getdata}}.}
 }
 \details{
    If the input object is not on a regular latlon grid the function

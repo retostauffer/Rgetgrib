@@ -4,7 +4,7 @@
 \title{Converting Prepared gribdata Objects to RasterStack}
 \description{
    Converts objects of class \code{gribdata} read by 
-   \code{getgrib::getdata} into RasterStack objects if possible.
+   \code{\link{getdata}} into RasterStack objects if possible.
    Only if the imported data are recognized as regular latlon grids
    (not for rotated grids).
 }
@@ -15,7 +15,7 @@
    gribdata2raster(x,...)
 }
 \arguments{
-   \item{x}{Object of class \code{gribdata} from \code{getgrib::getdata}.}
+   \item{x}{Object of class \code{gribdata} from \code{\link{getdata}}.}
    \item{...}{Currently not in use.}
 }
 \details{

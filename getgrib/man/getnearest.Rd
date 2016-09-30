@@ -8,10 +8,10 @@
    subfunction.
 }
 \usage{
-   getnearest( x, lon, lat ) 
+   getnearest( file, lon, lat ) 
 }
 \arguments{
-   \item{x}{File name of the grib1 file to be concidered.}
+   \item{file}{File name of the grib1 file to be concidered.}
    \item{lon}{Numeric or Vector. List of longitude coordinates. Warning:
       for \code{rotated_ll} the rotated coordinates are required. See details.}
    \item{lat}{See \code{lon}}
