@@ -34,7 +34,7 @@
 }
 \examples{
    # Find package installation path including the demo grib file
-   file <- paste(path.package("getgrib"),"data/SnowSafeHindcast_tp_20161010_2012101000.grib",sep="/")
+   file <- paste(path.package("getgrib"),"data/SnowSafeHindcast_201610130000.grib",sep="/")
 
    # Loading file, creates gribdata object. As this is
    # total precipitation I already scale them from meters to

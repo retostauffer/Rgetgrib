@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-30 20:31 on thinkreto
+# - L@ST MODIFIED: 2016-10-02 10:22 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -314,6 +314,70 @@ deaccumulate.gribdata <- function(x,deaccumulation=24,setzero=FALSE,zeroval=0.00
 }
 
 
+# -------------------------------------------------------------------
+# Cbind method - create S3 class 
+# -------------------------------------------------------------------
+#cbind <- function(...,deparse.level=1) UseMethod('cbind')
+#cbind.default <- function(...,deparse.level=1) base::cbind(...,deparse.level) 
+rbind.gribdata <- function(...,deparse.level=1) {
+
+   # Getting input arguments
+   x <- list(...)
+   # If only one input: nothing to rbind. Return.
+   if ( length(x) == 1 ) return(x[[1]])
+   # Extracting attributes, reduce data class to 'matrix'
+   attr <- list()
+   for ( i in 1:length(x) ) {
+      attr[[i]] <- attributes(x[[i]])
+      class(x[[i]]) <- 'matrix' # Avoid rbind recursion
+   }
+   # Helper function
+   retVal <- function(i,key) eval(parse(text=sprintf("attr[[%d]]$%s",i,key)))
+   # Check if they are combinable
+   # Matrix cols must be equivalent
+   # $lon and $lat must be equivalent
+   for ( i in 2:length(x) ) {
+      if ( ! ncol(x[[1]]) == ncol(x[[i]]) ) stop("Matrix dimensons not equivalent. Stop.")
+      # Shortname has to be the same
+      if ( ! retVal(1,'shortName') == retVal(i,'shortName') ) stop("Different variables: different shortName attributes")
+      # Check dimension
+      if ( ! any(retVal(1,'dimension') == retVal(i,'dimension')) ) stop("Grid dimension different")
+      # Longitude check
+      if ( ! (length(retVal(1,'lons')) == length(retVal(i,'lons'))) ||
+           ! all(retVal(1,'lons') == retVal(i,'lons')) ) stop("Different longitude definition")
+      # Latitude check
+      if ( ! (length(retVal(1,'lats')) == length(retVal(i,'lats'))) ||
+           ! all(retVal(1,'lats') == retVal(i,'lats')) ) stop("Different latitude definition")
+   }
+
+   cmd <- sprintf("res <- rbind(%s)",paste(sprintf("x[[%d]]",1:length(x)),collapse=","))
+   eval(parse(text=cmd))
+   
+   # Set class
+   class(res) <- c('gribdata','matrix')
+
+   # Now append attributes required for a proper 'gribdata' object
+   attr(res,'shortName') = retVal(1,'shortName')
+   attr(res,'dimension') = retVal(1,'dimension')
+   attr(res,'lons') = retVal(1,'lons')
+   attr(res,'lats') = retVal(1,'lats')
+   attr(res,'messagenumber') <- NULL
+   attr(res,'file') <- 'combined'
+   keys <- c('initdates','inithours','steps','members')
+   for ( k in keys ) {
+      tmp <- retVal(1,k)
+      for ( i in 2:length(x) ) {
+         tmp <- sort(unique(c(tmp,retVal(i,k))))
+      }
+      attr(res,k) <- tmp
+      attr(res,sprintf("n%s",k)) <- length(tmp)
+   }
+
+   a <<- attr
+   # Now append attributes again
+   return(res)
+
+}
 
 
 
