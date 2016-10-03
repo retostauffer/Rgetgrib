@@ -13,11 +13,15 @@
 \usage{
    ## Basic usage
    getdata( file, what )
+   ## Scaling
+   getdata( file, what, scale )
 }
 \arguments{
    \item{file}{Character string. File name of the grib file to be concidered.}
    \item{what}{Selector what to load. Can eather be a \code{character} string
       or a \code{integer}. See details section.}
+   \item{scale}{Character string, optional. You can scale the data while reading
+      them. Can be any kind of valid mathematical expression. See details.}
 }
 \details{
    Extracting grib data (full fields) directly from the grib file using
@@ -42,6 +46,13 @@
    - lats: vector with the latitudes corresponding to the grid data (column
       \code{5} to \code{N})
    - lons: equivalent to \code{lats} longitudes.
+
+   The \code{scale} argument allows to directly scale the data before they
+   will be returned. This is a simple string and can be any kind of valid
+   mathematical expression. For example:
+   - \code{scale="* 1000"} multiplies by \code{1000}, e.g. to scale from
+      meters to millimeters
+   - \code{scale="- 273.15"} converts degrees from Kelvin to Celsius
 }
 \examples{
    # Find package installation path including the demo grib file
