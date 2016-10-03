@@ -7,8 +7,44 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-10-02 12:06 on thinkreto
+# - L@ST MODIFIED: 2016-10-03 20:37 on thinkreto
 # -------------------------------------------------------------------
+
+
+# -------------------------------------------------------------------
+# Print on gribdata object
+# -------------------------------------------------------------------
+print.gribdata <- function(x,...) {
+
+   show <- function(a) {
+      if ( length(a) <= 6 ) {
+         return(sprintf("[%s]\n",paste(a,collapse=",")))
+      } else {
+         return(sprintf("[%s,...,%s]\n",paste(head(a,3),collapse=","),
+                                     paste(tail(a,3),collapse=",")))
+      }
+   }
+
+   # Show object content
+   cat(sprintf("      Matrix dimension:      %d x %d\n",nrow(x),ncol(x))) 
+   cat(sprintf("      Number of grid points: %d\n",ncol(x)-4))
+   cat(sprintf("      Source file:           %s\n",attr(x,'file')))
+   if ( ! is.na(attr(x,'messagenumber')) )
+      cat(sprintf("      From message number:   %d\n",attr(x,'messagenumber')))
+   cat("\n")
+   cat(sprintf("      Initial dates:      %d %s",attr(x,'ninitdates'),show(attr(x,'initdates'))))
+   cat(sprintf("      Initial hours:      %d %s",attr(x,'ninithours'),show(attr(x,'inithours'))))
+   cat(sprintf("      Steps:              %d %s",attr(x,'nsteps'),show(attr(x,'steps'))))
+   cat(sprintf("      Members:            %d %s",attr(x,'nmembers'),show(attr(x,'members'))))
+   cat(sprintf("      Longitude range:    %s\n",paste(round(range(attr(x,'lons')),3),collapse=" - ")))
+   cat(sprintf("      Latitude range:     %s\n",paste(round(range(attr(x,'lats')),3),collapse=" - ")))
+
+   # Minmas values
+   cat(sprintf("      Data range (!NA):   %s\n",
+         paste(round(range(x[,5:ncol(x)],na.rm=T),3),collapse=" - ")))
+   cat(sprintf("      Number of NA:       %s\n",sum(is.na(x[,5:ncol(x)]))))
+
+}
 
 
 # -------------------------------------------------------------------
@@ -140,7 +176,7 @@ getdataByMessageNumber <- function(file,what,scale) {
    # If user sets 'scale': scale data. Can be any
    # vaid mathematical expression.
    if ( ! missing(scale) )
-      eval(parse(text=sprintf("Freturn[[4]] <- Freturn[[4]] %s",scale)))
+      eval(parse(text=sprintf("Freturn[[5]] <- Freturn[[5]] %s",scale)))
 
    # ---------------------------------------------
    # Create "gribdata" object
@@ -236,7 +272,7 @@ get_grid_increments.gribdata <- function(x) {
 # possible.
 # -------------------------------------------------------------------
 gribdata2raster <- function(x,...) UseMethod('gribdata2raster')
-gribdata2raster.gribdata <- function(x,...) {
+gribdata2raster.gribdata <- function(x,silent=FALSE,...) {
 
    # Create raster data if possible
    if ( ! is_regular_ll_grid(x) ) stop("No regular ll grid, can't convert to raster.")
@@ -257,13 +293,13 @@ gribdata2raster.gribdata <- function(x,...) {
                    xmx   = max(lons) + increments[2]/2.,
                    crs=sp::CRS("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
    # Create raster
-   cat(sprintf("Generating %d raster layers now\n",length(layernames)))
-   pb <- txtProgressBar(0,length(layernames),style=3)
+   if ( ! silent ) cat(sprintf("Generating %d raster layers now\n",length(layernames)))
+   if ( ! silent ) pb <- txtProgressBar(0,length(layernames),style=3)
    allRaster <- list()
    allMeta <- as.data.frame(matrix(NA,nrow=ncol(x),ncol=4))
    names(allMeta) <- colnames(x)[1:4]
    for ( i in 1:nrow(x) ) {
-      setTxtProgressBar(pb,i)
+      if ( ! silent ) setTxtProgressBar(pb,i)
       tmp <- matrix(x[i,5:ncol(x)],nrow=dimension[1],ncol=dimension[2],byrow=F)
       tmp_raster <- empty; raster::values(tmp_raster) <- t(tmp)
       attr(tmp_raster,'meta') <- as.list(x[i,1:4])
@@ -271,7 +307,7 @@ gribdata2raster.gribdata <- function(x,...) {
       names(tmp_raster) <- layernames[i]
       allRaster[[length(allRaster)+1]] <- tmp_raster
    }
-   close(pb)
+   if ( ! silent ) close(pb)
 
    # Stack raster list
    allRaster <- stack(allRaster)

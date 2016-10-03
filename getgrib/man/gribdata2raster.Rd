@@ -12,10 +12,12 @@
    ## Usage
    gribdata2raster(x)
    ## Additional Arguments, but unused
-   gribdata2raster(x,...)
+   gribdata2raster(x,silent=FALSE,...)
 }
 \arguments{
    \item{x}{Object of class \code{gribdata} from \code{\link{getdata}}.}
+   \item{silent}{Boolean, default \code{FALSE}. If \code{FALSE} a status
+      bar is shown. If you need it quiet: set \code{silent=TRUE}.}
    \item{...}{Currently not in use.}
 }
 \details{

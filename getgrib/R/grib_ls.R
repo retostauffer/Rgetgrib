@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-29 20:20 on thinkreto
+# - L@ST MODIFIED: 2016-10-03 17:47 on pc24-c707
 # -------------------------------------------------------------------
 
 
@@ -30,7 +30,7 @@ grib_ls <- function(file,parameters,where) {
       if ( is.character(where) ) cmd <- sprintf("%s -w %s",cmd,where)
    }
    # Show command
-   cat(sprintf(" Calling: %s\n",cmd))
+   ##cat(sprintf(" Calling: %s\n",cmd))
    tcon <- system(cmd,intern=TRUE)
    data <- read.table(textConnection(tcon),skip=1,nrows=length(tcon)-5,header=TRUE)
    return(data)

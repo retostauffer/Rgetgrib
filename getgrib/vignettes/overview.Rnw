@@ -1,0 +1,293 @@
+\documentclass[nojss]{jss}
+\DeclareGraphicsExtensions{.pdf,.eps}
+% - Specify as vignette
+%\VignetteIndexEntry{overview}
+
+%Citations should be of the form ``author year''  not ``author, year''
+%\usepackage[utf8]{inputenc}
+%\usepackage{hyperref}
+%\usepackage{natbib}
+%\usepackage{Sweave}
+\setkeys{Gin}{width=\textwidth}
+
+
+\usepackage{amsmath}
+\shortcites{buizza2005,hagedorn2012,francesco2014}%,hamill2012,suranjana2014}
+
+\DeclareMathOperator*{\argmax}{\arg \! \max}
+\title{\emph{R}~package \pkg{getgrib}: an Overview}
+\author{
+        Reto Stauffer\\Universit\"at Innsbruck
+}
+\Plainauthor{Reto Stauffer}
+\Plaintitle{R~package getgrib: an Overview}
+\Shorttitle{R~package getgrib}
+
+\newcommand{\qcode}[1]{``\code{#1}''}
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\Abstract{
+Once upon a time I was working with Sascha on a small problem on how
+to efficiently read grib data in R. There is the \code{raster} package
+which offers some functionality, however, the \code{raster} package
+is neither quick nor does it provide the (often) required meta information
+of the grib messages or is able to read data from rotated grids (like COSMO).
+
+This was the beginning of this \code{getgrib} package which offers some
+grib handling functionalities using the ECMWF GRIB\_API and some customized
+Fortran routines in the backend.
+
+This vignette shows a short overview over the functionalities of
+the \emph{R}~package \pkg{getgrib}.
+}
+\Keywords{R package grib}
+\Address{
+  Reto Stauffer\\
+  Department of Statistics\\
+  Faculty of Economics and Statistics\\
+  Universit\"at Innsbruck\\
+  Universit\"atsstra{\ss}e 15\\
+  6020 Innsbruck, Austria, \textit{and}\\
+  Institute of Atmospheric and Cryospheric Sciences\\
+  Faculty of Geo- and Atmospheric Sciences\\
+  Universit\"at Innsbruck\\
+  Innrain 52\\
+  6020 Innsbruck, Austria\\
+  E-mail: \email{Reto.Stauffer@uibk.ac.at}\\
+}
+
+\begin{document}
+
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\tableofcontents
+\newpage
+
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+<<preamble,echo=FALSE,fig=FALSE>>=
+library("getgrib")
+@
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Known Problems}
+
+\textcolor{red}{Please note that this package is currently in version
+\Sexpr{packageVersion("getgrib")} but is still in a development state
+(or late alpha). There are some known problems which will be fixed
+somewhen if needed.}
+
+\begin{description}
+   \item[COSMO] Just as an example: the COSMO grib messages do not
+      contain a \qcode{perturbationNumber} (while ECMWF HIRES does).
+      This leads to problems reading the data (\code{getdata} crashes).
+      Has to be re-designed somewhen.
+   \item[Grid specification] note that the getdata operation will
+      stop (if not used with messagenumber) whenever the specification
+      of the grib files change from message 1 to N. This might be
+      a bit restrictive but is what I need at the moment. Adjustments
+      might be possible.
+\end{description}
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Installation}
+
+This package is using the ECMWF GRIB\_API which requires the api
+libraries for building the package. Please note that the code
+below is only an example and the location of the libraries might
+differ on your system.
+
+\begin{verbatim}
+# Bash/Shell: setting environment variables and flags
+export PKG_FCFLAGS="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
+export PKG_LIBS="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
+
+# Compile and install package
+version=`cat getgrib/DESCRIPTION | grep 'Version:' | awk '{print $2}'`
+R CMD build --no-build-vignettes getgrib
+R CMD INSTALL getgrib_${version}.tar.gz
+\end{verbatim}
+
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Get Nearest Neighbor Grid Point Data}
+
+\textcolor{red}{Reto: to test.}
+
+This is basically the first method which has been developed and somehow
+the reason for this package. This method was desidned for Sascha
+to get nearest neighbor data from COSMO grids in an efficient way.
+However, I have to test the function and to write a help page.
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Getting Grib Inventory}
+
+The ECMWF GRIB\_API offers a console tool called \code{grib\_ls} to 
+create an inventory of a grib file. This function mimiks this tool
+in R.
+
+<<gribls,echo=TRUE,fig=FALSE>>=
+# Path to package internal demo file
+file <- paste(path.package("getgrib"),"data/ECEPS_12.grib",sep="/")
+inv  <- grib_ls(file,where='step=12,shortName!=2t')
+print(head(inv))
+@
+
+The first line specifies the path to a demo grib file included in this
+package. \code{grib\_ls} simply returns a \code{data.frame} containing
+the inventory of the specified grib file. Note that the two inputs
+\qcode{parameters=} and \qcode{where=} mimik the \code{grib\_ls} inputs
+\qcode{-p} and \qcode{-w} and can be used in a similar way. Please see
+help page for a more detailed description.
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{gribdata: The Common Data Handling Object}
+
+The package is using a special object called \code{gribdata} for the
+data handling offering some basic methods for data manipulation.
+Most methods of the \code{getgrib} package are based on this object
+type. It is basically a \code{matrix} with additional attributes.
+These attributes are neede for further processing steps.
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Loading Data from a Grib File Using getdata}
+
+This is the main function to read data. The data will be returned
+as a \code{gribdata} object. There are currently two different
+methods on how to get the data. Option one: use the \code{shortName}
+selector. In this case the grib file is scanned and all messages
+with the corresponding \code{shortName} identifier in the grib message
+header will be returned. Example:
+<<getdata1,echo=TRUE,fig=FALSE>>=
+# Path to package internal demo file
+file <- paste(path.package("getgrib"),"data/ECEPS_12.grib",sep="/")
+# Reading all messages with "t2m"
+gribdata <- getdata(file,'2t') # getting all 2t forecasts
+# Show content
+gribdata
+@
+
+On the other hand data can be loaded via message number. The message
+number corresponds to the row number from \code{grib\_ls}. Example:
+<<getdata2,echo=TRUE,fig=FALSE>>=
+# Path to package internal demo file
+file <- paste(path.package("getgrib"),"data/ECEPS_12.grib",sep="/")
+# Reading all messages with "t2m"
+inv <- grib_ls(file) # getting all 2t forecasts
+print(head(inv,3))
+# Search for message
+idx <- which( inv$shortName == "mx2t" &
+              inv$perturbationNumber == 5 & inv$step == 12)
+print(idx)
+# Loading data
+gribdata <- getdata(file,idx)
+@
+
+Well, as shown above one message has been loaded (message \code{idx}) and returned
+the corresponding \code{gribdata} object. This example is loading a 
+2m maximum temperature forecast. Originally these data are in Kelvin. 
+You can easily scale the data:
+<<getdata3,echo=TRUE,fig=FALSE>>=
+# Loading data
+gribdata <- getdata(file,idx,scale="- 273.15")
+gribdata
+@
+Please note that the \qcode{scale} argument can be any valid mathematical
+expression leading to \qcode{x scale} where \code{x} are the data, \code{scale}
+the argument specified by you. Useful to e.g., scale precipitation from
+meters to millimeters, convert Kelvin to Celsius, or geopotential height
+to height.
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Convert griddata to RasterStack Objects}
+
+Objects of type \code{gribdata} can easily be converted into \code{RasterStack}
+objects by simply calling \code{gribdata2raster}.
+Please note that this only works for regular latlon grids (orthogonal
+longitude latitude grids). This will be checked internally using
+\code{is\_regular\_ll\_grid} using grid spacing returned by
+\code{get\_grid\_increments}.
+
+<<toraster,echo=TRUE,fig=TRUE,width=8,height=4>>=
+# Path to package internal demo file
+file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+# Path to package internal demo file
+gribdata <- getdata(file,"2t",scale="-273.15")
+is_regular_ll_grid(gribdata)
+get_grid_increments(gribdata)
+# Convert to raster
+rastered <- gribdata2raster(gribdata,silent=T)
+rastered
+# Plot
+require("colorspace")
+plot( rastered[[1:2]], col=diverge_hcl(101) )
+@
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Deaccumulate Data in gribdata Objects}
+
+This is fucking quick \code{:)}. Think of reading precipitation
+forecast data from a grib file which are accumulated in ECMWF and
+ECEPS grib files. Maybe you would like to deaccumulate them.
+Simply do this on the \code{gribdata} basis. Example:
+
+<<deacc,echo=TRUE,fig=TRUE,width=8,height=6>>=
+# Path to package internal demo file
+file <- paste(path.package("getgrib"),
+              "data/SnowSafeHindcast_201610130000.grib",sep="/")
+
+# Loading file, creates gribdata object. As this is
+# total precipitation I already scale them from meters to
+# millimeters using the 'scale="*1000"' argument.
+gribdata <- getdata(file,'tp',scale='* 1000')
+
+# Now we can to two things. Watching member 4 accumulated fields:
+require("colorspace"); require("maps")
+cols <- sequential_hcl(51,h=260,c(0,80),l=c(100,30),power=2)
+g1 <- gribdata2raster(gribdata,silent=T)
+plot( g1[["X2015101300_tp_174_m08"]],
+   col=cols, main="Total Precip Member 8 +0/+174h (accumulated)"  )
+map(add=T)
+@
+
+Deaccumulate on 24h-basis. Note that the additional options \code{setzero}
+and \code{zeroval} reduce all values below \code{zeroval} to \code{0} if
+\code{setzero=TRUE}. I used this for precipitation to remove interpolation
+or roundoff noise (\code{setzero=0.01} equals \code{0.01mm} per day).
+
+<<deacc2,echo=TRUE,fig=TRUE,width=8,height=6>>=
+# Deaccumulate. For details see ?deaccumulate
+gribdata_deaccumulated <- deaccumulate(gribdata,deaccumulation=24,
+                                       setzero=TRUE,zeroval=0.01)
+g2 <- gribdata2raster(gribdata_deaccumulated,silent=T)
+plot( g2[["X2015101300_tp_174_m08"]],
+   col=cols, main="Total Precip Member 8 +150/+174h (deaccumulated)"  )
+map(add=T)
+@
+
+
+
+
+
+
+\end{document}

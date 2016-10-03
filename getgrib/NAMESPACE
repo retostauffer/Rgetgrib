@@ -17,6 +17,6 @@ export(
    S3method("gribdata2raster",     "gribdata")
    S3method("deaccumulate",        "gribdata")
    S3method("rbind",               "gribdata") 
-   #S3method("cbind",               "default" ) 
+   S3method("print",               "gribdata")
 
 
