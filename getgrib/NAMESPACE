@@ -15,5 +15,6 @@ export(
     S3method("get_grid_increments", "gribdata")
     S3method("gribdata2raster",     "gribdata")
     S3method("deaccumulate",        "gribdata")
+    S3method("print",               "gribdata")
 
 
