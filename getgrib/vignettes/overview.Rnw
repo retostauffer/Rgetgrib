@@ -90,6 +90,11 @@ somewhen if needed.}
       contain a \qcode{perturbationNumber} (while ECMWF HIRES does).
       This leads to problems reading the data (\code{getdata} crashes).
       Has to be re-designed somewhen.
+   \item[Grid specification] note that the getdata operation will
+      stop (if not used with messagenumber) whenever the specification
+      of the grib files change from message 1 to N. This might be
+      a bit restrictive but is what I need at the moment. Adjustments
+      might be possible.
 \end{description}
 
 
@@ -112,6 +117,19 @@ version=`cat getgrib/DESCRIPTION | grep 'Version:' | awk '{print $2}'`
 R CMD build --no-build-vignettes getgrib
 R CMD INSTALL getgrib_${version}.tar.gz
 \end{verbatim}
+
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Get Nearest Neighbor Grid Point Data}
+
+\textcolor{red}{Reto: to test.}
+
+This is basically the first method which has been developed and somehow
+the reason for this package. This method was desidned for Sascha
+to get nearest neighbor data from COSMO grids in an efficient way.
+However, I have to test the function and to write a help page.
 
 
 % -------------------------------------------------------------------
@@ -250,7 +268,14 @@ g1 <- gribdata2raster(gribdata,silent=T)
 plot( g1[["X2015101300_tp_174_m08"]],
    col=cols, main="Total Precip Member 8 +0/+174h (accumulated)"  )
 map(add=T)
+@
 
+Deaccumulate on 24h-basis. Note that the additional options \code{setzero}
+and \code{zeroval} reduce all values below \code{zeroval} to \code{0} if
+\code{setzero=TRUE}. I used this for precipitation to remove interpolation
+or roundoff noise (\code{setzero=0.01} equals \code{0.01mm} per day).
+
+<<deacc2,echo=TRUE,fig=TRUE,width=8,height=6>>=
 # Deaccumulate. For details see ?deaccumulate
 gribdata_deaccumulated <- deaccumulate(gribdata,deaccumulation=24,
                                        setzero=TRUE,zeroval=0.01)
