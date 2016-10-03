@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-10-02 10:22 on thinkreto
+# - L@ST MODIFIED: 2016-10-02 12:06 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -260,11 +260,14 @@ gribdata2raster.gribdata <- function(x,...) {
    cat(sprintf("Generating %d raster layers now\n",length(layernames)))
    pb <- txtProgressBar(0,length(layernames),style=3)
    allRaster <- list()
+   allMeta <- as.data.frame(matrix(NA,nrow=ncol(x),ncol=4))
+   names(allMeta) <- colnames(x)[1:4]
    for ( i in 1:nrow(x) ) {
       setTxtProgressBar(pb,i)
       tmp <- matrix(x[i,5:ncol(x)],nrow=dimension[1],ncol=dimension[2],byrow=F)
       tmp_raster <- empty; raster::values(tmp_raster) <- t(tmp)
       attr(tmp_raster,'meta') <- as.list(x[i,1:4])
+      allMeta[i,1:4] <- x[i,1:4]
       names(tmp_raster) <- layernames[i]
       allRaster[[length(allRaster)+1]] <- tmp_raster
    }
@@ -272,8 +275,13 @@ gribdata2raster.gribdata <- function(x,...) {
 
    # Stack raster list
    allRaster <- stack(allRaster)
-   return(allRaster)
+   # Prepare and append meta information
+   allMeta$initdate <- strptime(allMeta$initdate,"%Y%m%d")
+   allMeta$valid <- allMeta$initdate + (allMeta$inithour + allMeta$step) * 3600
+   attr(allRaster,'meta') <- allMeta
 
+   # Return
+   return(allRaster)
 }
 
 
