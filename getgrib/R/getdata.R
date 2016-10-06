@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-10-03 20:37 on thinkreto
+# - L@ST MODIFIED: 2016-10-06 16:00 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -296,7 +296,7 @@ gribdata2raster.gribdata <- function(x,silent=FALSE,...) {
    if ( ! silent ) cat(sprintf("Generating %d raster layers now\n",length(layernames)))
    if ( ! silent ) pb <- txtProgressBar(0,length(layernames),style=3)
    allRaster <- list()
-   allMeta <- as.data.frame(matrix(NA,nrow=ncol(x),ncol=4))
+   allMeta <- as.data.frame(matrix(NA,nrow=nrow(x),ncol=4))
    names(allMeta) <- colnames(x)[1:4]
    for ( i in 1:nrow(x) ) {
       if ( ! silent ) setTxtProgressBar(pb,i)
@@ -347,13 +347,18 @@ deaccumulate.gribdata <- function(x,deaccumulation=24,setzero=FALSE,zeroval=0.00
 
    # Dropping 'non-deaccumulated' messages (rows)
    x <- x[which(Fresult[[3]]==1),]
+   # Doing the same with the meta information
+   meta <- meta[which(Fresult[[3]]==1),]
 
    # Note: as we dropped the 'non deaccumulated' messages
    # we cannot add the dim attribute. Not required.
    for ( nam in names(hold) ) {
-      if ( nam == 'dim' ) next
+      if ( nam %in% c('dim','meta') ) next
       attr(x,nam) <- hold[[nam]]
    }
+
+   # Setting proper - reduced - meta information
+   attr(x,'meta') <- meta
    return(x)
 }
 
