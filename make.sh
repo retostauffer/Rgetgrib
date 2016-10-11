@@ -10,7 +10,6 @@ if [ $host == "meteo-data.uibk.ac.at" ] ; then
    export PKG_FCFLAGS="-L/opt/local_libs/lib -I/opt/local_libs/include -lgrib_api_f90 -lgrib_api"
    export PKG_LIBS="-L/opt/local_libs/lib -I/opt/local_libs/include -lgrib_api_f90 -lgrib_api"
 else
-   exit 3
    export PKG_FCFLAGS="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
    export PKG_LIBS="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
 fi
