@@ -1,7 +1,7 @@
 Package: getgrib
 Type: Package
 Title: Getting Nearest Neighbors of a Grib(1) File Via GribAPI/Fortran
-Version: 1.1
+Version: 1.2-0
 Date: 2016-05-25
 Author: Reto Stauffer
 Maintainer: Reto Stauffer <reto.stauffer@uibk.ac.at>
