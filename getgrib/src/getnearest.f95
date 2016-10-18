@@ -14,6 +14,8 @@ subroutine getnearest(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES)
 
    real(8), dimension(:), allocatable  :: nearest_lats, nearest_lons
    real(8), dimension(:), allocatable  :: distances, values, lsm_values
+   !real, dimension(:), allocatable  :: nearest_lats, nearest_lons
+   !real, dimension(:), allocatable  :: distances, values, lsm_values
    integer(kind=kindOfInt), dimension(:), allocatable  :: indexes
    real(kind=8)                        :: value
  
@@ -53,28 +55,23 @@ subroutine getnearest(GRBFILE,NMESSAGES,NSTATIONS,LONS,LATS,PARAM,RES)
    ! Some output
    do msg=1,nmessages,1
 
-
       ! Extracting information
       call grib_new_from_file(infile,igrib)
 
       ! Getting meta information
-      call grib_get_int(igrib,'indicatorOfParameter',   PARAM(msg,1))
-      call grib_get_int(igrib,'indicatorOfTypeOfLevel', PARAM(msg,2))
+      call grib_get_int(igrib,'indicatorOfParameter',   PARAM(msg,1), ios)
+      if ( ios .ne. 0 ) PARAM(msg,1) = 0
+      call grib_get_int(igrib,'indicatorOfTypeOfLevel', PARAM(msg,2), ios)
+      if ( ios .ne. 0 ) PARAM(msg,2) = 0
       call grib_get_int(igrib,'level',                  PARAM(msg,3))
       call grib_get_int(igrib,'dataDate',               PARAM(msg,4))
       call grib_get_int(igrib,'dataTime',               PARAM(msg,5))
-      call grib_get_int(igrib,'startStep',              PARAM(msg,6))
-      call grib_get_int(igrib,'endStep',                PARAM(msg,7))
-
-      !PARAM(msg,1) = paramId
-      !PARAM(msg,2) = dataDate
-      !PARAM(msg,3) = dataTime
-      !PARAM(msg,4) = startStep
-      !PARAM(msg,5) = endStep
+      call grib_get_int(igrib,'startStep',              PARAM(msg,6), ios)
+      call grib_get_int(igrib,'endStep',                PARAM(msg,7), ios)
 
       ! Getting the data itself
       call grib_find_nearest(igrib, .false., LATS, LONS, &
-               nearest_lats, nearest_lons,lsm_values, distances, indexes, ios)
+               nearest_lats, nearest_lons, lsm_values, distances, indexes, ios)
       call grib_release(igrib)
 
       ! Write results onto the INTENT(INOUT) objects

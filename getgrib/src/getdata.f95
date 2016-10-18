@@ -174,6 +174,7 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    integer :: count, idx, currow 
    integer :: curdate, curtime, curstep, curpert
    integer :: ndates, ntimes, nsteps, nperturbations
+   logical :: isensemble
 
    character(len=20) :: currshortName
    integer, dimension(:), allocatable   :: dates, times, steps, perturbations
@@ -203,6 +204,17 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
       stop
    endif
 
+   ! Open/calling grib file
+   call grib_new_from_file(infile,igrib)
+   call grib_new_from_index(idx,igrib, iret)
+   call grib_get_int(igrib,'perturbationNumber',curpert,ios)
+   if ( ios .ne. 0 ) then
+      isensemble = .false.
+   else
+      isensemble = .true.
+   endif
+   call grib_release(igrib)
+
    ! Getting all different steps in the file
    call grib_index_create(idx,GRBFILE,'step')
    call grib_index_get_size(idx,'step',nsteps)
@@ -210,10 +222,15 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    call grib_index_get(idx,'step',steps)
 
    ! Getting all different perturbations in the file
-   call grib_index_create(idx,GRBFILE,'perturbationNumber')
-   call grib_index_get_size(idx,'perturbationNumber',nperturbations)
-   allocate(perturbations(nperturbations))
-   call grib_index_get(idx,'perturbationNumber',perturbations)
+   if ( isensemble ) then
+      call grib_index_create(idx,GRBFILE,'perturbationNumber')
+      call grib_index_get_size(idx,'perturbationNumber',nperturbations)
+      allocate(perturbations(nperturbations))
+      call grib_index_get(idx,'perturbationNumber',perturbations)
+   else
+      nperturbations = 1
+      perturbations  = (/-9/)
+   endif
 
    ! Getting all different dataDates 
    call grib_index_create(idx,GRBFILE,'dataDate')
@@ -233,7 +250,7 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
 
    ! Getting first grib message
    call grib_index_create(idx,GRBFILE,'shortName')
-   call grib_index_select(idx,'shortName',trim(shortName))
+   call grib_index_select(idx,'shortName',trim(SHORTNAME))
 
    ! Allocate two dummy vectors (required for loading data)
    allocate(lats(NELEM))
@@ -247,7 +264,10 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
       count=count+1
       call grib_get_string(igrib,'shortName',currshortName)
       call grib_get_int(igrib,'step',curstep)
-      call grib_get_int(igrib,'perturbationNumber',curpert)
+      call grib_get_int(igrib,'perturbationNumber',curpert,ios)
+      if ( ios .ne. 0 ) then
+         curpert = -9
+      endif
       call grib_get_int(igrib,'dataDate',curdate)
       call grib_get_int(igrib,'dataTime',curtime)
       !write(*,'(A,A,A,i3,A,i3)') 'shortName=',trim(currshortName),&
@@ -324,7 +344,10 @@ subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUE
       ! Getting required meta information
       call grib_get_string(igrib,'shortName',SHORTNAME)
       call grib_get_int(igrib,'step',curstep)
-      call grib_get_int(igrib,'perturbationNumber',curpert)
+      call grib_get_int(igrib,'perturbationNumber',curpert,ios)
+      if ( ios .ne. 0 ) then
+         curpert = -9
+      endif
       call grib_get_int(igrib,'dataDate',curdate)
       call grib_get_int(igrib,'dataTime',curtime)
 

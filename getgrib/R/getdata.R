@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-10-06 16:00 on thinkreto
+# - L@ST MODIFIED: 2016-10-16 19:13 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -51,7 +51,8 @@ print.gribdata <- function(x,...) {
 # Reading data from grib file
 # -------------------------------------------------------------------
 getdata <- function(file,what,scale) {
-   if ( is.character(what) ) {
+   if ( missing(what) ) what <- NULL
+   if ( is.character(what) | is.null(what) ) {
       return( getdataByShortName(file,what=what[1L],scale) )
    } else if ( is.numeric(what) || is.integer(what) ) {
       return( getdataByMessageNumber(file,what=what[1L],scale) )
@@ -67,7 +68,9 @@ getdata <- function(file,what,scale) {
 getdataByShortName <- function(file,what,scale) {
 
    # Iput:
+   if ( is.null(what) ) what <- "*"
    shortName <- what
+   shortName <- sprintf("%s%s",shortName,paste(rep(" ",20-nchar(shortName)),collapse=""))
 
    # Loading fortran library
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
