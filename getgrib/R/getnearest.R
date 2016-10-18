@@ -8,11 +8,11 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-05-25, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-09-30 14:44 on pc24-c707
+# - L@ST MODIFIED: 2016-10-18 13:45 on pc24-c707
 # -------------------------------------------------------------------
 
 
-getnearest <- function(file, lon, lat) {
+getnearest <- function(file, lon, lat, tozoo=FALSE ) {
 
    if ( ! length(file) == 1 ) stop("Input argument 'file' has to be length 1!")
    if ( ! file.exists(file) ) stop(sprintf("Sorry, but file %s does not exist",file))
@@ -27,7 +27,7 @@ getnearest <- function(file, lon, lat) {
    # Getting number of messages in the grib file. Needed to allocate
    # the corresponding results matrizes and vectors.
    nmessages <- .Fortran('messagecount',file,as.integer(0),PACKAGE='getgrib')[[2]][1]
-   cat(sprintf("  We will have %d messages in the flie\n",nmessages))
+   cat(sprintf("  We will have %d messages in the file\n",nmessages))
 
    # Prepare input arguments for the fortran routine
    nstations <- as.integer(length(lon))
@@ -50,7 +50,49 @@ getnearest <- function(file, lon, lat) {
    names(params) <- c('indicatorOfParameter','indicatorOfTypeOfLevel','level',
                       'dataDate','dataTime','startStep','endStep')
 
-   return( list('coords'=coords,'params'=params,'data'=data) )
 
+   # Try to convert to zoo, only if there is one singel
+   # variable in the grib file and only one station has been
+   # requested. If not possible to convert
+   # simply set "tozoo" to "FALSE", wherefore the list object
+   # will be returned. 
+   if ( tozoo ) {
+      if ( ! nrow(coords) == 1 ) {
+         warning("Cannot create zoo object as multiple stations have been requested. Return list.")
+         tozoo <- FALSE
+      } else if ( ! nrow(unique(params[,1:3])) == 1 ) {
+         warning("Cannot create zoo as there are different variables in the loaded data set. Return list object!")
+         tozoo <- FALSE
+      }
+   }
+
+   # If tozoo is still TRUE create the zoo object
+   if ( tozoo ) {
+      require("zoo")
+      idx <- strptime(sprintf("%08d %04d",params$dataDate,params$dataTime),"%Y%m%d %H%M")
+      idx <- as.POSIXlt(idx) + params$startStep * 3600
+      if ( ! sum(params$startStep-params$endStep) == 0 ) {
+         data <- zoo( cbind(subset(params,select=c(startStep,endStep)),data), idx )
+      } else {
+         data <- zoo( data, idx )
+      }
+      attr(data,"coords") <- coords
+      return(data)
+   }
+
+   # Else return the list object
+   return( list('coords'=coords,'params'=params,'data'=data) )
 }
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -8,13 +8,15 @@
    subfunction.
 }
 \usage{
-   getnearest( file, lon, lat ) 
+   getnearest( file, lon, lat, tozoo = FALSE ) 
 }
 \arguments{
    \item{file}{File name of the grib1 file to be concidered.}
    \item{lon}{Numeric or Vector. List of longitude coordinates. Warning:
       for \code{rotated_ll} the rotated coordinates are required. See details.}
    \item{lat}{See \code{lon}}
+   \item{tozoo}{logical, default \code{FALSE}. If set to \code{TRUE} a zoo object
+      will be returned if possible. See details.}
 }
 \details{
    Extracting information from the grib1 file. For each \code{lon}, \code{lat}
@@ -22,7 +24,7 @@
    Please note: for \code{rotated_ll} grids (rotated lon/lat grids as provided
    by the COSMO) the ROTATED coordinates, not the TRUE geographical coordinates.
 
-   Return values:
+   Return values for \code{tozoo=FALSE} or if conversion to \code{zoo} not possible:
    - coords: \code{data.frame} containing original longitude and latitude values,
       and the longitude and latitude values of the nearest grid point.
    - params: \code{data.frame} with grib message meta information. Currently only
@@ -34,6 +36,18 @@
       corresponds to the number of messages in the grib file, and also matches
       the rows in \code{params}. The columns contain the values for the different
       locations (matching \code{coords}) as requrested.
+
+   Return values for \code{tozoo=TRUE}:
+   If \code{tozoo} is set to \code{TRUE} the method tries to convert the data
+   extracted from the grib file into a zoo object. This is only possible if
+   (i) only one single station was extracted (only one value fur \code{lon} and
+   \code{lat}) and if only one variable has been found in the grib file.
+   In case startStep and endStep in the grib file differ for the extracted
+   variable a multivariate \code{zoo} will be returned including:
+   - startStep, endStep, and data whereas the last column contains the
+     extracted data.
+   If startStep and endStep in the grib meta are identical only an univariate
+   \code{zoo} object will be returned containing the extracted data.
 }
 \examples{
    # Find package installation path including the demo grib file
