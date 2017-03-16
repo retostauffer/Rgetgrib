@@ -119,5 +119,7 @@ subroutine messagecount(GRBFILE, nmessages)
       print *, "Problems counting the messages in the grib file. Stop."
       stop
    endif
+
+   call grib_close_file(infile)
  
 end subroutine messagecount
