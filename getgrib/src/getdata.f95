@@ -204,16 +204,16 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
       stop
    endif
 
-   ! Open/calling grib file
-   call grib_new_from_file(infile,igrib)
-   call grib_new_from_index(idx,igrib, iret)
-   call grib_get_int(igrib,'perturbationNumber',curpert,ios)
-   if ( ios .ne. 0 ) then
-      isensemble = .false.
-   else
-      isensemble = .true.
-   endif
-   call grib_release(igrib)
+   !old ensemble check! ! Open/calling grib file
+   !old ensemble check! call grib_new_from_file(infile,igrib)
+   !old ensemble check! call grib_new_from_index(idx,igrib, iret)
+   !old ensemble check! call grib_get(igrib,'perturbationNumber',curpert,ios)
+   !old ensemble check! if ( ios .ne. 0 ) then
+   !old ensemble check!    isensemble = .false.
+   !old ensemble check! else
+   !old ensemble check!    isensemble = .true.
+   !old ensemble check! endif
+   !old ensemble check! call grib_release(igrib)
 
    ! Getting all different steps in the file
    call grib_index_create(idx,GRBFILE,'step')
@@ -222,14 +222,27 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    call grib_index_get(idx,'step',steps)
 
    ! Getting all different perturbations in the file
-   if ( isensemble ) then
-      call grib_index_create(idx,GRBFILE,'perturbationNumber')
-      call grib_index_get_size(idx,'perturbationNumber',nperturbations)
-      allocate(perturbations(nperturbations))
-      call grib_index_get(idx,'perturbationNumber',perturbations)
+   !if ( isensemble ) then
+   !   call grib_index_create(idx,GRBFILE,'perturbationNumber',ios)
+   !   call grib_index_get_size(idx,'perturbationNumber',nperturbations)
+   !   call grib_index_get(idx,'perturbationNumber',perturbations,ios)
+   !else
+   !   nperturbations = 1
+   !   perturbations  = (/-9/)
+   !endif
+   
+   ! Check whether the file has perturbations, if: save perturbation numbers
+   ! Getting all different perturbations in the file
+   call grib_index_create(idx,GRBFILE,'perturbationNumber',ios)
+   call grib_index_get_size(idx,'perturbationNumber',nperturbations)
+   !print *, ios
+   if ( nperturbations .eq. 1 ) then
+      isensemble = .false.
+      perturbations  = (/0./)
    else
-      nperturbations = 1
-      perturbations  = (/-9/)
+      allocate(perturbations(nperturbations))
+      call grib_index_get(idx,'perturbationNumber',perturbations,ios)
+      isensemble = .true.
    endif
 
    ! Getting all different dataDates 
@@ -261,6 +274,7 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
    call grib_new_from_index(idx,igrib, iret)
    count = 0 ! Init value
    do while (iret /= GRIB_END_OF_INDEX)
+
       count=count+1
       call grib_get_string(igrib,'shortName',currshortName)
       call grib_get_int(igrib,'step',curstep)
@@ -276,6 +290,10 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
       ! Looking for position of step of the current message in 'steps'
       ! which corresponds to the row of the output data matrix.
       currow = matrixPositionInt4(curdate,curtime,curstep,curpert,spgrid,size(spgrid,1),size(spgrid,2))
+      !devel!do i = 1, size(spgrid,1)
+      !devel!   print *, spgrid(i,:)
+      !devel!end do
+      !devel!print *, "Looking for ",curdate, curtime, curstep, curpert
       if ( currow .lt. 1 ) then
          print *, "[!] Could not find step position. Stop."; stop 8
       end if
