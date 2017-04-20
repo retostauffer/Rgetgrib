@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2016-10-16 19:13 on thinkreto
+# - L@ST MODIFIED: 2017-04-20 09:01 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -55,7 +55,14 @@ getdata <- function(file,what,scale) {
    if ( is.character(what) | is.null(what) ) {
       return( getdataByShortName(file,what=what[1L],scale) )
    } else if ( is.numeric(what) || is.integer(what) ) {
-      return( getdataByMessageNumber(file,what=what[1L],scale) )
+      if ( length(what) == 1 )
+         return( getdataByMessageNumber(file,what=what[1L],scale) )
+      # Else
+      res <- list()
+      for ( i in seq_along(what) ) {
+         res[[i]] <- getdataByMessageNumber(file,what=what[i],scale)
+      }
+      return(res)
    } else {
       stop("Unknown input to getgrib::getdata()")
    }

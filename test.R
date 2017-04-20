@@ -1,6 +1,29 @@
 
 
 
+library('getgrib')
+file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperHindcast_pl_201701020000.grib"
+
+   cat(sprintf(" * Interpolate data from file \"%s\"\n",file))
+   listing <- grib_ls(file,c('shortName','typeOfLevel','level'))
+   listing$shortName <- as.character(listing$shortName)
+   listing$typeOfLevel <- as.character(listing$typeOfLevel)
+   idx <- which(listing$typeOfLevel=="isobaricInhPa")
+   if ( length(idx) > 0 )
+      listing$shortName[idx] <- sprintf("%s%d",listing$shortName[idx],listing$level[idx])
+   if ( missing(param) ) param <- as.character(unique(listing$shortName))
+
+   idx <- which(listing$shortName == "z850")
+
+   g <- getdata(file,head(idx))
+   r <- gribdata2raster(g)
+
+
+
+
+stop(' --- dev stop here --- ')
+
+
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
 # -----------------------------------------------------------------
