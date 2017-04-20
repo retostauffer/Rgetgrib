@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-04-20 09:01 on thinkreto
+# - L@ST MODIFIED: 2017-04-20 10:30 on thinkreto
 # -------------------------------------------------------------------
 
 
@@ -29,8 +29,14 @@ print.gribdata <- function(x,...) {
    cat(sprintf("      Matrix dimension:      %d x %d\n",nrow(x),ncol(x))) 
    cat(sprintf("      Number of grid points: %d\n",ncol(x)-4))
    cat(sprintf("      Source file:           %s\n",attr(x,'file')))
-   if ( ! is.na(attr(x,'messagenumber')) )
-      cat(sprintf("      From message number:   %d\n",attr(x,'messagenumber')))
+   if ( "messagenumbers" %in% names(attributes(x)) ) {
+      tmp <- attr(x,'messagenumbers')
+      if ( length(tmp) < 10 ) {
+         cat(sprintf("      From message number(s):   %s\n",paste(tmp,collapse=", ")))
+      } else {
+         cat(sprintf("      From %d messages (too much to print)\n",length(tmp)))
+      }
+   }
    cat("\n")
    cat(sprintf("      Initial dates:      %d %s",attr(x,'ninitdates'),show(attr(x,'initdates'))))
    cat(sprintf("      Initial hours:      %d %s",attr(x,'ninithours'),show(attr(x,'inithours'))))
@@ -55,14 +61,7 @@ getdata <- function(file,what,scale) {
    if ( is.character(what) | is.null(what) ) {
       return( getdataByShortName(file,what=what[1L],scale) )
    } else if ( is.numeric(what) || is.integer(what) ) {
-      if ( length(what) == 1 )
-         return( getdataByMessageNumber(file,what=what[1L],scale) )
-      # Else
-      res <- list()
-      for ( i in seq_along(what) ) {
-         res[[i]] <- getdataByMessageNumber(file,what=what[i],scale)
-      }
-      return(res)
+      return( getdataByMessageNumber(file,what=what,scale) )
    } else {
       stop("Unknown input to getgrib::getdata()")
    }
@@ -153,7 +152,7 @@ getdataByShortName <- function(file,what,scale) {
 getdataByMessageNumber <- function(file,what,scale) {
 
    # Input:
-   messagenumber <- what
+   messagenumbers <- what
 
    # Loading fortran library
    library.dynam('getgrib',package='getgrib',lib.loc=.libPaths())
@@ -173,10 +172,14 @@ getdataByMessageNumber <- function(file,what,scale) {
 
    # ---------------------------------------------
    # Getting data
-   Freturn <- .Fortran('getgriddataByMessageNumber',file,as.integer(messagenumber),
-                    paste(rep(" ",20),collapse=""),
-                    rep(as.integer(-999),4), # meta information
-                    rep(as.numeric(-999.),prod(dimension)), # data (values)
+   NMSG <- as.integer(length(messagenumbers))
+   META <- matrix(as.integer(-999),ncol=4,nrow=NMSG)
+   VALS <- matrix(as.numeric(-999),ncol=prod(dimension),nrow=NMSG)
+   Freturn <- .Fortran('getgriddataByMessageNumber',file,
+                    as.integer(messagenumbers), NMSG,
+                    META, VALS, # meta-data and data
+                    #rep(as.integer(-999),4), # meta information
+                    #rep(as.numeric(-999.),prod(dimension)), # data (values)
                     rep(as.numeric(-999.),prod(dimension)), # lats
                     rep(as.numeric(-999.),prod(dimension)), # lons
                     as.integer(prod(dimension)), # number of grid points (col dimension)
@@ -191,14 +194,14 @@ getdataByMessageNumber <- function(file,what,scale) {
    # ---------------------------------------------
    # Create "gribdata" object
    # First combine meta information and data
-   data <- t(c(Freturn[[4]],Freturn[[5]]))
+   data <- cbind(Freturn[[4]],Freturn[[5]])
    # Adding class and labels
    colnames(data) <- c("initdate","inithour","step","member",paste("gp",1:(ncol(data) - 4),sep = ""))
    class(data) <- c("gribdata","matrix")
 
    # ---------------------------------------------
    # Create vector of unique dates, hours, steps, and members
-   shortName <- gsub(" ","",Freturn[[3]])
+   shortName <- "Unknown" #gsub(" ","",Freturn[[3]])
    lats      <- as.numeric(Freturn[[6]])
    lons      <- as.numeric(Freturn[[7]])
    steps     <- data[1,'step'];     nsteps     <- 1
@@ -210,7 +213,7 @@ getdataByMessageNumber <- function(file,what,scale) {
    # Create final object
    class(data) <- c('gribdata','matrix')
    keys <- c('shortName','dimension','lats','lons','file','initdates','ninitdates',
-             'inithours','ninithours','steps','nsteps','members','nmembers','messagenumber')
+             'inithours','ninithours','steps','nsteps','members','nmembers','messagenumbers')
    for ( key in keys ) eval(parse(text=sprintf("attr(data,'%s') <- %s",key,key)))
    return(data)
 }

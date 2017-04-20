@@ -322,13 +322,13 @@ end subroutine getgriddataByShortName
 ! Returns latitude and longitude vector for one grib message
 ! specified by the MESSAGENUMBER. 
 ! -------------------------------------------------------------------
-subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUES,LATS,LONS,NELEM)
+subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBERS,NMSG,META,VALUES,LATS,LONS,NELEM)
 
    use grib_api
 
    implicit none
 
-   integer :: infile, igrib, ios, iret, i
+   integer :: infile, igrib, ios, iret, i, pos, msgcount
    integer :: count, idx
    integer :: curdate, curtime, curstep, curpert
 
@@ -338,11 +338,14 @@ subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUE
    ! VALUES:    real matrix to store data.
    ! NELEM:     number of grid points (Ni times Nj)
    ! NROWS:     number of 'rows' for VALUES/META. Number of steps * number of perturbations
-   integer, intent(in)                       :: NELEM, MESSAGENUMBER
-   real(8), intent(inout), dimension(NELEM)  :: VALUES, LATS, LONS
-   integer, intent(inout), dimension(4)      :: META
+   integer, intent(in)                           :: NELEM, NMSG
+   integer, intent(in), dimension(NMSG)          :: MESSAGENUMBERS
+   real(8), intent(inout), dimension(NMSG,NELEM) :: VALUES
+   real(8), intent(inout), dimension(NELEM)      :: LATS, LONS
+   integer, intent(inout), dimension(NMSG,4)     :: META
    character(len=255), intent(in) :: GRBFILE
-   character(len=20), intent(inout) :: SHORTNAME
+
+   integer :: arrayPositionInt
 
    ! Open grib file. If not readable or not found: exit with exit code 9
    call grib_open_file(infile, GRBFILE,'r',ios)
@@ -353,14 +356,17 @@ subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUE
 
    ! Open/calling grib file
    count = 0 ! Init value
+   msgcount = 0 ! How many messages have been read
 
    do while (iret /= GRIB_END_OF_INDEX)
       count=count+1
       call grib_new_from_file(infile,igrib)
-      if ( count .ne. MESSAGENUMBER ) cycle
+
+      ! If message number not requested: cycle
+      pos = arrayPositionInt(count,MESSAGENUMBERS,NMSG)
+      if ( pos .lt. 0 ) cycle
 
       ! Getting required meta information
-      call grib_get_string(igrib,'shortName',SHORTNAME)
       call grib_get_int(igrib,'step',curstep)
       call grib_get_int(igrib,'perturbationNumber',curpert,ios)
       if ( ios .ne. 0 ) then
@@ -370,19 +376,24 @@ subroutine getgriddataByMessageNumber(GRBFILE,MESSAGENUMBER,SHORTNAME,META,VALUE
       call grib_get_int(igrib,'dataTime',curtime)
 
       ! Store meta data
-      META = (/curdate,curtime,curstep,curpert/)
+      msgcount = msgcount + 1
+      META(msgcount,:) = (/curdate,curtime,curstep,curpert/)
 
       ! Reading data
-      call grib_get_data_real8(igrib, LATS, LONS, VALUES, ios)
+      call grib_get_data_real8(igrib, LATS, LONS, VALUES(msgcount,:), ios)
 
       ! Release and take next message
       call grib_release(igrib)
       call grib_new_from_index(idx,igrib, iret)
 
-      exit
+      ! If we have read all messages we do not have to loop till the end
+      if ( msgcount .ge. NMSG ) exit
+
    end do
 
-   !!call grib_get_data_real8(igrib, LATS, LONS, values, ios)
+   !do msgcount=0,NMSG
+   !   print *, META(msgcount,:)
+   !enddo
 
    ! Release and close.
    call grib_release(igrib)

@@ -34,8 +34,10 @@
 
    There are two options for the input argument \code{what}. If \code{what}
    is a character this is interpreted as "shortName". All messages with this
-   shortName will be returned. If \code{what} is an integer the message with
-   the corresponding number will be returned.
+   shortName will be returned. If \code{what} is an \code{integer} or vector
+   of \code{integers} the content of these messages will be returned. Please
+   note that the shortName cannot be returned! If you request multiple messages
+   containing different variables the output might be hard to process!
 
    For each message one row will be returned, unique on initial date (dataDate),
    initial hour (dataTime), forecast step (step), and member (perturbationNumber).
