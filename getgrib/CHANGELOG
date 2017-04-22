@@ -1,0 +1,6 @@
+
+
+Version 1.2-3, 2017-04-22, RS
+=============================
+Added method 'bilinear', performs bilinear interpolation on
+grib-files using src/bilinear.c and the grib_api.

@@ -10,7 +10,7 @@
 #include <grib_api.h>
 
 /* Search for closest north east grid point */
-int ll_closest_northeast(double stnlon, double stnlat, int n,
+int closest_northeast(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
    static int res = -9;
    int i;
@@ -24,7 +24,7 @@ int ll_closest_northeast(double stnlon, double stnlat, int n,
    return res;
 }
 /* Search for closest south east grid point */
-int ll_closest_southeast(double stnlon, double stnlat, int n,
+int closest_southeast(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
    static int res = -9;
    int i;
@@ -38,7 +38,7 @@ int ll_closest_southeast(double stnlon, double stnlat, int n,
    return res;
 }
 /* Search for closest south west grid point */
-int ll_closest_southwest(double stnlon, double stnlat, int n,
+int closest_southwest(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
    static int res = -9;
    int i;
@@ -52,7 +52,7 @@ int ll_closest_southwest(double stnlon, double stnlat, int n,
    return res;
 }
 /* Search for closest north west grid point */
-int ll_closest_northwest(double stnlon, double stnlat, int n,
+int closest_northwest(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
    static int res = -9;
    int i;
@@ -66,7 +66,7 @@ int ll_closest_northwest(double stnlon, double stnlat, int n,
    return res;
 }
 /* Computes euclidean distance */
-double ll_compute_distance(double x1,double x2,double y1,double y2) {
+double compute_distance(double x1,double x2,double y1,double y2) {
    static double res;
    res = sqrt(pow(x1-x2,2.) + pow(y1-y2,2.));
    return res;
@@ -74,7 +74,7 @@ double ll_compute_distance(double x1,double x2,double y1,double y2) {
 /* Given station location stnlon and stnlat this function searches for the
    4 nearest grid points in quadrants. Returns an integer vector with 4
    values containing indizes for the grid points (NE,SE,SW,NW) */
-int * ll_get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
+int * get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
          double * lons,double * lats,int verbose) {
 
    int i;
@@ -82,14 +82,14 @@ int * ll_get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
    double dist[n];
 
    /* Compute distance to each grid point */
-   for ( i=0; i<n; i++ ) { dist[i] = ll_compute_distance(stnlon,lons[i],stnlat,lats[i]); }
+   for ( i=0; i<n; i++ ) { dist[i] = compute_distance(stnlon,lons[i],stnlat,lats[i]); }
 
    /* Searching for nearest neighbor gridpoints, quadrants, regular_ll! */
    if ( verbose >= 2 ) { Rprintf("    Station:     %10.5f %10.5f\n",stnlon,stnlat); }
-   res[0] = ll_closest_northeast(stnlon,stnlat,n,lons,lats,dist,verbose);
-   res[1] = ll_closest_southeast(stnlon,stnlat,n,lons,lats,dist,verbose);
-   res[2] = ll_closest_southwest(stnlon,stnlat,n,lons,lats,dist,verbose);
-   res[3] = ll_closest_northwest(stnlon,stnlat,n,lons,lats,dist,verbose);
+   res[0] = closest_northeast(stnlon,stnlat,n,lons,lats,dist,verbose);
+   res[1] = closest_southeast(stnlon,stnlat,n,lons,lats,dist,verbose);
+   res[2] = closest_southwest(stnlon,stnlat,n,lons,lats,dist,verbose);
+   res[3] = closest_northwest(stnlon,stnlat,n,lons,lats,dist,verbose);
 
    return res;
 }
@@ -113,7 +113,7 @@ int * ll_get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
                  deltalon
 
 */
-double * ll_get_interpolation_weights(double stnlon, double stnlat,
+double * get_interpolation_weights(double stnlon, double stnlat,
          double * lons, double * lats, double deltalon, double deltalat, int * neighbors) {
    static double res[4];
    int i;
@@ -129,7 +129,7 @@ double * ll_get_interpolation_weights(double stnlon, double stnlat,
 }
 
 /* Interpolate */
-double ll_get_interpolated_value(int * neighbors, double * weights, double * values,
+double get_interpolated_value(int * neighbors, double * weights, double * values,
          double deltalon, double deltalat) {
 
    static double res;
@@ -139,7 +139,7 @@ double ll_get_interpolated_value(int * neighbors, double * weights, double * val
 }
 
 /* -------------------- MAIN FUNCTION ------------------- */
-SEXP ll_grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP statlat,
+SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP statlat,
       SEXP verbose)
 {
 
@@ -272,11 +272,11 @@ SEXP ll_grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SE
       /* Interpolate station by station */
       for ( i = 0; i < nstat; i++ ) {
          /* Do the interpolation */
-         neighbors = ll_get_surrounding_grid_point_indizes(statlonptr[i],statlatptr[i],
+         neighbors = get_surrounding_grid_point_indizes(statlonptr[i],statlatptr[i],
                      values_len,lons,lats,verboseptr[0]);
-         weights   = ll_get_interpolation_weights(statlonptr[i],statlatptr[i],lons,lats,
+         weights   = get_interpolation_weights(statlonptr[i],statlatptr[i],lons,lats,
                      deltalon,deltalat,neighbors);
-         rvalptr[ msgcount + nmsg*i ] = ll_get_interpolated_value(neighbors,weights,
+         rvalptr[ msgcount + nmsg*i ] = get_interpolated_value(neighbors,weights,
                                          values,deltalon,deltalat);
       }
 

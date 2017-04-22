@@ -17,8 +17,9 @@ file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsembl
 #file <- "foo.grib"
 
 system.time( x <- bilinear(file,stations,reshape=T) )
-source("getgrib/R/bilinearlist.R")
-system.time( x2 <- bilinearlist(file,stations,reshape=T) )
+
+stop('foo')
+
 
 #print(file1);
 if ( Sys.info()['nodename'] == "thinkreto" ) {
