@@ -7,6 +7,7 @@ export(
    "getdata",
    "grib_ls",
    "getnearest",
+   "bilinear",
    "get_grid_increments",
    "is_regular_ll_grid"
 )

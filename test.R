@@ -9,21 +9,25 @@ stations <- read.table('stations.txt',header=T,strip.white=T,
             stringsAsFactor=FALSE)
 stations <- SpatialPointsDataFrame(subset(stations,select=c(lon,lat)),data=stations,
             proj4string=crs("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
+file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsemble_pl_hourly_201701280000.grib"
 
-file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
-#file <- 'hc/SnowSafeHindcast_tp_20161010_2011101000.grib'
-file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsemble_pl_hourly_201701290000.grib"
+#system.time( x <- bilinear(file,stations,reshape=TRUE) )
 
+#file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+#file <- "foo.grib"
 
+system.time( x <- bilinear(file,stations,reshape=T) )
+source("getgrib/R/bilinearlist.R")
+system.time( x2 <- bilinearlist(file,stations,reshape=T) )
 
 #print(file1);
 if ( Sys.info()['nodename'] == "thinkreto" ) {
    Sys.setenv("PKG_FCFLAGS"="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api")
    Sys.setenv("PKG_LIBS"="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api")
    compile("/home/retos/Workingdirectory/getgrib/getgrib/src/");
-#} else {
-#   compile("/home/retos/MyScripts/Rpackage_getgrib/getgrib/src/");
 }
+
+source("getgrib/R/bilinear.R")
 
 verbose <- 0
 cat(sprintf("[R] Calling c-function now ...\n"))
@@ -34,10 +38,22 @@ res <- .Call("grib_bilinear_interpolation",
              stations@coords[,"lon"],stations@coords[,"lat"],
              as.integer(verbose))
 )
-cat(sprintf("[R] end of c-function ...\n"))
+print(res)
+cat(sprintf("[R] end of c-function ...\n\n\n"))
 
-Cres <- matrix(res,ncol=nrow(stations),byrow=T)
-Rres <- t(extract(gribdata2raster(getdata(file,1:3)),stations,method="bilinear"))
+
+verbose <- 0
+cat(sprintf("[R] Calling c-function now ...\n"))
+
+system.time(
+res <- .Call("ll_grib_bilinear_interpolation",
+             as.character(file),
+             as.numeric(stations$statnr),
+             stations@coords[,"lon"],stations@coords[,"lat"],
+             as.integer(verbose))
+)
+print(res)
+cat(sprintf("[R] end of c-function ...\n\n\n"))
 
 stop(" --------------- dev stop ----------------" )
 
