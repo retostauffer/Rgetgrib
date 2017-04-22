@@ -20,4 +20,4 @@ export(
    S3method("print",               "gribdata")
 
 # - Shared object file
-   #useDynLib(getgrib)
+   useDynLib(getgrib)

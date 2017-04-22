@@ -15,12 +15,23 @@ file1 <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
 
 
 
-print(file1);
-compile("/home/retos/MyScripts/Rpackage_getgrib/getgrib/src/");
+#print(file1);
+if ( Sys.info()['nodename'] == "thinkreto" ) {
+   Sys.setenv("PKG_FCFLAGS"="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api")
+   Sys.setenv("PKG_LIBS"="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api")
+   compile("/home/retos/Workingdirectory/getgrib/getgrib/src/");
+#} else {
+#   compile("/home/retos/MyScripts/Rpackage_getgrib/getgrib/src/");
+}
+
+verbose <- 2
+cat(sprintf("[R] Calling c-function now ...\n"))
 .Call("grib_bilinear_interpolation",
       as.character(file1),
       as.numeric(stations$statnr),
-      stations@coords[,"lon"],stations@coords[,"lat"])
+      stations@coords[,"lon"],stations@coords[,"lat"],
+      as.integer(verbose))
+cat(sprintf("[R] end of c-function ...\n"))
 
 
 stop(" --------------- dev stop ----------------" )
