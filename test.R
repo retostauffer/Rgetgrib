@@ -10,8 +10,9 @@ stations <- read.table('stations.txt',header=T,strip.white=T,
 stations <- SpatialPointsDataFrame(subset(stations,select=c(lon,lat)),data=stations,
             proj4string=crs("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
 
-file1 <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
-#file2 <- 'hc/SnowSafeHindcast_tp_20161010_2011101000.grib'
+file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+#file <- 'hc/SnowSafeHindcast_tp_20161010_2011101000.grib'
+file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsemble_pl_hourly_201701290000.grib"
 
 
 
@@ -24,15 +25,19 @@ if ( Sys.info()['nodename'] == "thinkreto" ) {
 #   compile("/home/retos/MyScripts/Rpackage_getgrib/getgrib/src/");
 }
 
-verbose <- 2
+verbose <- 0
 cat(sprintf("[R] Calling c-function now ...\n"))
-.Call("grib_bilinear_interpolation",
-      as.character(file1),
-      as.numeric(stations$statnr),
-      stations@coords[,"lon"],stations@coords[,"lat"],
-      as.integer(verbose))
+system.time(
+res <- .Call("grib_bilinear_interpolation",
+             as.character(file),
+             as.numeric(stations$statnr),
+             stations@coords[,"lon"],stations@coords[,"lat"],
+             as.integer(verbose))
+)
 cat(sprintf("[R] end of c-function ...\n"))
 
+Cres <- matrix(res,ncol=nrow(stations),byrow=T)
+Rres <- t(extract(gribdata2raster(getdata(file,1:3)),stations,method="bilinear"))
 
 stop(" --------------- dev stop ----------------" )
 
