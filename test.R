@@ -1,32 +1,29 @@
 
 
+library("getgrib")
+library("sp")
 
-##### Test reading multiple messages
-####library('getgrib')
-####file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperHindcast_pl_201701020000.grib"
-####
-####   cat(sprintf(" * Interpolate data from file \"%s\"\n",file))
-####   listing <- grib_ls(file,c('shortName','typeOfLevel','level'))
-####   listing$shortName <- as.character(listing$shortName)
-####   listing$typeOfLevel <- as.character(listing$typeOfLevel)
-####   idx <- which(listing$typeOfLevel=="isobaricInhPa")
-####   if ( length(idx) > 0 )
-####      listing$shortName[idx] <- sprintf("%s%d",listing$shortName[idx],listing$level[idx])
-####   param <- as.character(unique(listing$shortName))
-####
-####   idx <- which(listing$shortName == "z850")
-####
-####what <- idx
-####
-####   print(head(idx))
-####   g <- getdata(file,head(idx))
-####   stop('devstop2')
-####   r <- gribdata2raster(g)
-####
-####
-####
-####
-####stop(' --- dev stop here --- ')
+
+stations <- read.table('stations.txt',header=T,strip.white=T,
+            colClasses=c('numeric','character','numeric','numeric','numeric'),
+            stringsAsFactor=FALSE)
+stations <- SpatialPointsDataFrame(subset(stations,select=c(lon,lat)),data=stations,
+            proj4string=crs("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
+
+file1 <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
+#file2 <- 'hc/SnowSafeHindcast_tp_20161010_2011101000.grib'
+
+
+
+print(file1);
+compile("/home/retos/MyScripts/Rpackage_getgrib/getgrib/src/");
+.Call("grib_bilinear_interpolation",
+      as.character(file1),
+      as.numeric(stations$statnr),
+      stations@coords[,"lon"],stations@coords[,"lat"])
+
+
+stop(" --------------- dev stop ----------------" )
 
 
 # -----------------------------------------------------------------

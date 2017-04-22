@@ -19,4 +19,5 @@ export(
    S3method("rbind",               "gribdata") 
    S3method("print",               "gribdata")
 
-
+# - Shared object file
+   #useDynLib(getgrib)

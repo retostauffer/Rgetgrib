@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2017-02-24, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-02-24 09:25 on thinkreto
+# - L@ST MODIFIED: 2017-04-20 15:19 on pc24-c707
 # -------------------------------------------------------------------
 
 # SASCHA VSC # # Load modules
@@ -51,12 +51,12 @@ fi
 printf " BUILDING PACKAGE: getgrib\n"
 R CMD build --no-build-vignettes getgrib
 if [ $? -ne 0 ] ; then
-    printf "\n\nerror building package\n\n"; exit
+    printf "\n\nerror building package\n\n"; exit 9
 fi
 
 printf " INSTALLING PACKAGE: getgrib_%s.tar.gz\n" ${version}
 R CMD INSTALL getgrib_${version}.tar.gz
 if [ $? -ne 0 ] ; then
-    printf "\n\nerror installing package\n\n"; exit
+    printf "\n\nerror installing package\n\n"; exit 9
 fi
 
