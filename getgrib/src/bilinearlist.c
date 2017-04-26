@@ -12,21 +12,21 @@
 /* Search for closest north east grid point */
 int closest_northeast(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
-   static int res = -9;
+   int res = -9;
    int i;
    for ( i = 0; i < n; i++ ) {
       /* Gridpoint not onrtheast from station location */
-      if ( lons[i] <= stnlon || lats[i] <= stnlat ) continue;
+      if ( lons[i] <= stnlon || lats[i] <= stnlat ) { continue; }
       if ( res < 0 ) { res = i; continue; }
       if ( dist[i] < dist[res] ) { res = i; }
    }
-   if ( verbose >= 2 ) { Rprintf("    Closest NE:  %10.5f %10.5f\n",lons[res],lats[res]); }
+   if ( verbose >= 2 ) { Rprintf("    Closest NE:  %10.5f %10.5f  (gp %d)\n",lons[res],lats[res],res); }
    return res;
 }
 /* Search for closest south east grid point */
 int closest_southeast(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
-   static int res = -9;
+   int res = -9;
    int i;
 
    for ( i = 0; i < n; i++ ) {
@@ -34,13 +34,13 @@ int closest_southeast(double stnlon, double stnlat, int n,
       if ( res < 0 ) { res = i; continue; }
       if ( dist[i] < dist[res] ) { res = i; }
    }
-   if ( verbose >= 2 ) { Rprintf("    Closest SE:  %10.5f %10.5f\n",lons[res],lats[res]); }
+   if ( verbose >= 2 ) { Rprintf("    Closest SE:  %10.5f %10.5f  (gp %d)\n",lons[res],lats[res],res); }
    return res;
 }
 /* Search for closest south west grid point */
 int closest_southwest(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
-   static int res = -9;
+   int res = -9;
    int i;
 
    for ( i = 0; i < n; i++ ) {
@@ -48,33 +48,34 @@ int closest_southwest(double stnlon, double stnlat, int n,
       if ( res < 0 ) { res = i; continue; }
       if ( dist[i] < dist[res] ) { res = i; }
    }
-   if ( verbose >= 2 ) { Rprintf("    Closest SW:  %10.5f %10.5f\n",lons[res],lats[res]); }
+   if ( verbose >= 2 ) { Rprintf("    Closest SW:  %10.5f %10.5f  (gp %d)\n",lons[res],lats[res],res); }
    return res;
 }
 /* Search for closest north west grid point */
 int closest_northwest(double stnlon, double stnlat, int n,
                       double *lons, double *lats, double *dist, int verbose) {
-   static int res = -9;
+   int res = -9;
    int i;
 
    for ( i = 0; i < n; i++ ) {
+      //Rprintf(" ------------- %10.5f %10.5f\n",lats[i],stnlat);
       if ( lons[i] > stnlon || lats[i] <= stnlat ) continue;
       if ( res < 0 ) { res = i; continue; }
       if ( dist[i] < dist[res] ) { res = i; }
    }
-   if ( verbose >= 2 ) { Rprintf("    Closest NW:  %10.5f %10.5f\n",lons[res],lats[res]); }
+   if ( verbose >= 2 ) { Rprintf("    Closest NW:  %10.5f %10.5f  (gp %d)\n",lons[res],lats[res],res); }
    return res;
 }
 /* Computes euclidean distance */
 double compute_distance(double x1,double x2,double y1,double y2) {
-   static double res;
+   double res;
    res = sqrt(pow(x1-x2,2.) + pow(y1-y2,2.));
    return res;
 }
 /* Given station location stnlon and stnlat this function searches for the
    4 nearest grid points in quadrants. Returns an integer vector with 4
    values containing indizes for the grid points (NE,SE,SW,NW) */
-int * get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
+int * get_surrounding_grid_point_indizes(int statnr, double stnlon,double stnlat,int n,
          double * lons,double * lats,int verbose) {
 
    int i;
@@ -85,7 +86,10 @@ int * get_surrounding_grid_point_indizes(double stnlon,double stnlat,int n,
    for ( i=0; i<n; i++ ) { dist[i] = compute_distance(stnlon,lons[i],stnlat,lats[i]); }
 
    /* Searching for nearest neighbor gridpoints, quadrants, regular_ll! */
-   if ( verbose >= 2 ) { Rprintf("    Station:     %10.5f %10.5f\n",stnlon,stnlat); }
+   if ( verbose >= 2 ) {
+      Rprintf("    Station:     %d\n",statnr);
+      Rprintf("                 %10.5f %10.5f\n",stnlon,stnlat);
+   }
    res[0] = closest_northeast(stnlon,stnlat,n,lons,lats,dist,verbose);
    res[1] = closest_southeast(stnlon,stnlat,n,lons,lats,dist,verbose);
    res[2] = closest_southwest(stnlon,stnlat,n,lons,lats,dist,verbose);
@@ -138,6 +142,12 @@ double get_interpolated_value(int * neighbors, double * weights, double * values
    return res; 
 }
 
+int intArrayMin(int * x, int n) {
+   int i, min = x[0];
+   for ( i=1; i<n; i++ ) { if ( x[i] < min ) { min = x[i]; } }
+   return( min );
+}
+
 /* -------------------- MAIN FUNCTION ------------------- */
 SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP statlat,
       SEXP verbose)
@@ -155,6 +165,8 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
    int    nmsg = 0, msgcount = 0;
    size_t values_len = 0;
    double *values = NULL, *lons = NULL, *lats = NULL;
+   double missingvalue = -9999.0;
+   int    minint;
    int    *neighbors;
    double *weights;
    double deltalon, deltalat;
@@ -272,10 +284,15 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
       /* Interpolate station by station */
       for ( i = 0; i < nstat; i++ ) {
          /* Do the interpolation */
-         neighbors = get_surrounding_grid_point_indizes(statlonptr[i],statlatptr[i],
-                     values_len,lons,lats,verboseptr[0]);
+         neighbors = get_surrounding_grid_point_indizes(statnrptr[i],
+                        statlonptr[i],statlatptr[i],
+                        values_len,lons,lats,verboseptr[0]);
+         minint    = intArrayMin(neighbors,4);
+         if ( minint < 0 ) { rvalptr[ msgcount + nmsg*i ] = missingvalue; continue; } 
+         /////Rprintf("    Neighbors:   %4d %4d %4d %4d\n",neighbors[0],neighbors[1],neighbors[2],neighbors[3]);
+         /////Rprintf("    Minimum:     %d\n",minint);
          weights   = get_interpolation_weights(statlonptr[i],statlatptr[i],lons,lats,
-                     deltalon,deltalat,neighbors);
+                        deltalon,deltalat,neighbors);
          rvalptr[ msgcount + nmsg*i ] = get_interpolated_value(neighbors,weights,
                                          values,deltalon,deltalat);
       }

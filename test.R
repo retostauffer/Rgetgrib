@@ -4,19 +4,18 @@ library("getgrib")
 library("sp")
 
 
-stations <- read.table('stations.txt',header=T,strip.white=T,
-            colClasses=c('numeric','character','numeric','numeric','numeric'),
-            stringsAsFactor=FALSE)
-stations <- SpatialPointsDataFrame(subset(stations,select=c(lon,lat)),data=stations,
-            proj4string=crs("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs"))
-file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsemble_pl_hourly_201701280000.grib"
+load('stationlist.rda')
 
-#system.time( x <- bilinear(file,stations,reshape=TRUE) )
+file <- "t2m.grib"
+file <- "/home/retos/Workingdirectory/snowpaper/station/newgrib/SnowPaperEnsemble_hourly_201612010000.grib"
+x <- bilinear(file,stations,reshape=F,verbose=0)
+print(x)
 
-#file <- paste(path.package("getgrib"),"data/ECMWF_t2m_demo.grib",sep="/")
-#file <- "foo.grib"
 
-system.time( x <- bilinear(file,stations,reshape=T) )
+data <- subset(x,shortName=="t2m")
+data <- data[,which(grepl("^station_",names(data)))]
+idx  <- which( data > 300, arr.ind=TRUE )
+
 
 stop('foo')
 

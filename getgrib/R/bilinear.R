@@ -13,8 +13,9 @@
 #                interpolate ECMWF ensemble data on regular_ll!
 # -------------------------------------------------------------------
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
+#                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-04-22 12:36 on thinkreto
+# - L@ST MODIFIED: 2017-04-24 08:09 on thinkreto
 # -------------------------------------------------------------------
 
 bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
@@ -39,6 +40,10 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
    colnames(res$meta) <- c("init","runhour","step","member")
    res$meta           <- as.data.frame(res$meta)
    colnames(res$data) <- sprintf("station_%d",stations$statnr)
+
+   # Replace missing values with NA
+   idx <- which(res$data == -9999., arr.ind=TRUE)
+   if ( nrow(idx) > 0 ) res$data[idx] <- NA
 
    # compute init date and valid date and add as POSIXct
    res$meta$init    <- strptime(res$meta$init,"%Y%m%d") + res$meta$runhour*3600
