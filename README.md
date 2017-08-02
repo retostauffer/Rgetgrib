@@ -18,6 +18,7 @@ of Sascha - nearest neighbor search.
 
 INSTALLATION NOTES
 ==================
+
 A proper grib API installation is required to build the fortran
 code. Furthermore, some paths and flags have to be set properly. 
 I was using the _make.sh_ file which should be included in this
@@ -25,12 +26,27 @@ repository, but - of course - contains some paths fitting my
 machine. Please check the paths there and then do something
 similar as this (some bash shell code):
 
-   #!/bin/bash
-   version=`cat getgrib/DESCRIPTION | grep 'Version:' | awk '{print $2}'`
-   export PKG_FCFLAGS="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
-   export PKG_LIBS="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
-   R CMD build --no-build-vignettes getgrib
-   R CMD INSTALL getgrib_${version}.tar.gz
+```
+#!/bin/bash
+## This line simply extracts the current package version
+## out of the R package DESCRIPTION file
+version=`cat getgrib/DESCRIPTION | grep 'Version:' | awk '{print $2}'`
 
+## Setting required R flags for the compilers (IMPORTANT)
+export PKG_FCFLAGS="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
+export PKG_LIBS="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
+
+## Build and install package
+R CMD build --no-build-vignettes getgrib
+R CMD INSTALL getgrib_${version}.tar.gz
+```
+
+BILINEAR INTERPOLATION
+======================
+
+There is a function called ``bilinear`` which performs bilinear interpolation
+on grib files (deterministic and ensemble grib files) using some C-backend
+code based on the ``GRIB_API`` (wherefore the compiler flags are required).
+Code written somewhen in spring 2017 by Reto Stauffer.
 
 
