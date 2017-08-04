@@ -49,4 +49,7 @@ on grib files (deterministic and ensemble grib files) using some C-backend
 code based on the ``GRIB_API`` (wherefore the compiler flags are required).
 Code written somewhen in spring 2017 by Reto Stauffer.
 
+Method in ``bilinearlist.c``  used by ``bilinear(...)`` modified, is now able
+to interpolate grib messages without ``perturbationNumber`` in the message header.
+A ``perturbationNumber = -1`` will be returned if not found.
 
