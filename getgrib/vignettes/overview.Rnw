@@ -30,14 +30,16 @@
 % -------------------------------------------------------------------
 \Abstract{
 Once upon a time I was working with Sascha on a small problem on how
-to efficiently read grib data in R. There is the \code{raster} package
-which offers some functionality, however, the \code{raster} package
+to efficiently read grib data in R. There is the \pkg{raster} package
+which offers some functionality, however, the \pkg{raster} package
 is neither quick nor does it provide the (often) required meta information
 of the grib messages or is able to read data from rotated grids (like COSMO).
 
 This was the beginning of this \code{getgrib} package which offers some
-grib handling functionalities using the ECMWF GRIB\_API and some customized
-Fortran routines in the backend.
+grib handling functionalities using the ECMWF GRIB\_API.
+Over the time the \emph{R}~package \pkg{getgrib} got some updates and
+extensions, and some methods have been replaced and/or removed by better,
+faster, or more flexible methods (written in \code{C}/\code{Fortran}/\code{R}).
 
 This vignette shows a short overview over the functionalities of
 the \emph{R}~package \pkg{getgrib}.
@@ -67,14 +69,11 @@ the \emph{R}~package \pkg{getgrib}.
 \tableofcontents
 \newpage
 
-
-
 % -------------------------------------------------------------------
 % -------------------------------------------------------------------
 <<preamble,echo=FALSE,fig=FALSE>>=
 library("getgrib")
 @
-
 
 % -------------------------------------------------------------------
 % -------------------------------------------------------------------
@@ -82,19 +81,23 @@ library("getgrib")
 
 \textcolor{red}{Please note that this package is currently in version
 \Sexpr{packageVersion("getgrib")} but is still in a development state
-(or late alpha). There are some known problems which will be fixed
+(or early beta?). There are some known problems which will be fixed
 somewhen if needed.}
 
 \begin{description}
    \item[COSMO] Just as an example: the COSMO grib messages do not
       contain a \qcode{perturbationNumber} (while ECMWF HIRES does).
       This leads to problems reading the data (\code{getdata} crashes).
-      Has to be re-designed somewhen.
+      Has to be re-designed somewhen. \textbf{UPDATE:} the
+      \code{bilinear} method (for bilinear interpolation) works if
+      \qcode{perturbationNumber} is not specified (returns
+      \code{perturbationNumber=0}).
    \item[Grid specification] note that the getdata operation will
       stop (if not used with messagenumber) whenever the specification
       of the grib files change from message 1 to N. This might be
       a bit restrictive but is what I need at the moment. Adjustments
-      might be possible.
+      might be possible. \textbf{UPDATE:} the \code{bilinear} method
+      for interpolation supports changing grids.
 \end{description}
 
 
@@ -145,6 +148,10 @@ in R.
 file <- paste(path.package("getgrib"),"data/ECEPS_12.grib",sep="/")
 inv  <- grib_ls(file,where='step=12,shortName!=2t')
 print(head(inv))
+# Another example: GFS forecast demo file
+file <- paste(path.package("getgrib"),"data/GFS_12.grib",sep="/")
+inv  <- grib_ls(file,where='step=12,shortName=cape')
+print(head(inv))
 @
 
 The first line specifies the path to a demo grib file included in this
@@ -157,6 +164,8 @@ help page for a more detailed description.
 % -------------------------------------------------------------------
 % -------------------------------------------------------------------
 \section{gribdata: The Common Data Handling Object}
+
+\textbf{Note:} based on Fortran code.
 
 The package is using a special object called \code{gribdata} for the
 data handling offering some basic methods for data manipulation.
@@ -179,8 +188,10 @@ header will be returned. Example:
 file <- paste(path.package("getgrib"),"data/ECEPS_12.grib",sep="/")
 # Reading all messages with "t2m"
 gribdata <- getdata(file,'2t') # getting all 2t forecasts
-# Show content
+# Show summary
 gribdata
+# Show size
+dim(gribdata)
 @
 
 On the other hand data can be loaded via message number. The message
@@ -197,6 +208,9 @@ idx <- which( inv$shortName == "mx2t" &
 print(idx)
 # Loading data
 gribdata <- getdata(file,idx)
+# Show summary and size
+gribdata
+dim(gribdata)
 @
 
 Well, as shown above one message has been loaded (message \code{idx}) and returned
@@ -246,7 +260,10 @@ plot( rastered[[1:2]], col=diverge_hcl(101) )
 % -------------------------------------------------------------------
 \section{Deaccumulate Data in gribdata Objects}
 
-This is fucking quick \code{:)}. Think of reading precipitation
+\textbf{Note:} based on the Fortran \code{gribdata} routines.
+
+This code has been written in a few minutes and might not be the
+best one \code{:)}. Think of reading precipitation
 forecast data from a grib file which are accumulated in ECMWF and
 ECEPS grib files. Maybe you would like to deaccumulate them.
 Simply do this on the \code{gribdata} basis. Example:
@@ -265,8 +282,8 @@ gribdata <- getdata(file,'tp',scale='* 1000')
 require("colorspace"); require("maps")
 cols <- sequential_hcl(51,h=260,c(0,80),l=c(100,30),power=2)
 g1 <- gribdata2raster(gribdata,silent=T)
-plot( g1[["X2015101300_tp_174_m08"]],
-   col=cols, main="Total Precip Member 8 +0/+174h (accumulated)"  )
+plot( g1[[ names(g1)[grepl(".*_174_m08$",names(g1))] ]],
+   col=cols, main="Total Precip [mm] Member 8 +0/+174h (accumulated)"  )
 map(add=T)
 @
 
@@ -280,10 +297,116 @@ or roundoff noise (\code{setzero=0.01} equals \code{0.01mm} per day).
 gribdata_deaccumulated <- deaccumulate(gribdata,deaccumulation=24,
                                        setzero=TRUE,zeroval=0.01)
 g2 <- gribdata2raster(gribdata_deaccumulated,silent=T)
-plot( g2[["X2015101300_tp_174_m08"]],
-   col=cols, main="Total Precip Member 8 +150/+174h (deaccumulated)"  )
+plot( g2[[ names(g1)[grepl(".*_174_m08$",names(g1))] ]],
+   col=cols, main="Total Precip [mm] Member 8 +150/+174h (deaccumulated)"  )
 map(add=T)
 @
+
+
+% -------------------------------------------------------------------
+% -------------------------------------------------------------------
+\section{Bilinear Interpolation of Grib Data}
+
+\textbf{Note:} C implementation.
+
+Needed a quick method to bilinearely interpolate large amounts of
+data from grib data sets. After spending one or two nights trying to
+adjust my Fortran code I've decided to switch to C (using GRIB\_API).
+The result is the method \code{bilinear} based on \code{src/bilinearlist.c}.
+
+\code{bilinear} loops trough all the messages in a grib file and calculates
+the required weights for the interpolation. Therefore it does not matter whether
+grib message 1 has a different specification (e.g., shifted grid, larger domain)
+than grib message 2 which might sometimes be useful. In contrast to the
+Fortran routines C allows to directly return \code{SEXP} list objects allocated
+within the C routine which makes everything more flexible (and we do not have to
+loop trough the grib files twice as it is required in the Fortran based routines
+within this package).
+
+Input to the method \code{bilinear} is the name of a grib (grib1/grib2) and a
+\code{SpatialPointsDataFrame} object. Note that the coordinate reference system is not
+used. The \code{SpatialPointsDataFrame} objects are required such that we have
+a clear and unique assignment between the coordinates and a station identifier, in this
+case a station number. An example:
+
+<<bilinear1,echo=TRUE>>=
+# Take the GFS forecast file in the demo data sets here
+file <- paste(path.package("getgrib"),"data/GFSreforecastV2_tmintmax.grib2",sep="/")
+
+# Define some stations
+set.seed(300)
+stations <- SpatialPointsDataFrame( data.frame("lon"=runif(10,5,17),"lat"=runif(10,45,54)),
+            data=data.frame("statnr"=sample(1000:2000,10))) 
+print(as.data.frame(stations))
+
+# Perform interpolation
+x <- bilinear(file,stations)
+head(x,3)
+dim(x)
+@
+
+In this case (\code{bilinear(file,stations)}) the result is a \code{data.frame}
+with message meta information in the first 5 columns followed by the interpolated
+values for all stations in \code{stations}. The interpolation method has a second
+mode where the interpolated values will be reshaped. An example:
+
+<<bilinear2,echo=TRUE>>=
+# Perform interpolation
+x <- bilinear(file,stations,reshape=TRUE)
+# Return is now a list object
+length(x)
+names(x)
+# Each list entry contains the interpolated values.
+# If there are several members (ensemble) the columns 5-N
+# contain the different members indicated by the member number
+# (corresponds to the perturbationNumber meta information).
+print(dim(x[[1]]))
+head(x[[1]],2)
+@
+
+<<bilinear3,echo=FALSE,fig=TRUE,height=6,width=10>>=
+par(mfrow=c(1,2))
+# One station
+plot(x[[1]]$valid,x[[1]][,5],type="n",ylim=c(5,35),xlab="time",ylab="temperature [C]",
+   main=sprintf("Interpolated Ensemble Station %d",stations$statnr[1]))
+tmax <- subset(x[[1]],shortName=="tmax")
+tmin <- subset(x[[1]],shortName=="tmin")
+col.idx <- which(grepl("^member_[0-9]+$",names(tmax)))
+matplot(tmax$valid,tmax[,col.idx]-273.15,type="l",add=TRUE,col=2,lty=1)
+matplot(tmin$valid,tmin[,col.idx]-273.15,type="l",add=TRUE,col=4,lty=2)
+legend("bottomleft",bty="n",lty=1:2,col=c(2,4),legend=c("tmax","tmin"))
+
+# All
+plot(x[[1]]$valid,x[[1]][,5],type="n",ylim=c(5,35),xlab="time",ylab="temperature [C]",
+   main=sprintf("Interpolated Ensemble Mean for %d Different Stations",nrow(stations)))
+for ( i in 1:length(x) ) {
+   tmax <- subset(x[[i]],shortName=="tmax")
+   tmin <- subset(x[[i]],shortName=="tmin")
+   col.idx <- which(grepl("^member_[0-9]+$",names(tmax)))
+   matplot(tmax$valid,apply(tmax[,col.idx],1,mean)-273.15,type="l",add=TRUE,col=2,lty=1)
+   matplot(tmin$valid,apply(tmin[,col.idx],1,mean)-273.15,type="l",add=TRUE,col=4,lty=2)
+}
+legend("bottomleft",bty="n",lty=1:2,col=c(2,4),legend=c("tmax","tmin"))
+@
+
+Should work for a wide range of grib files, see \code{?bilinear} examples
+for more details.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -269,11 +269,11 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
       GRIB_CHECK(grib_get_double(h,"dataDate",&metaptr[msgcount+0*nmsg]),0);
       GRIB_CHECK(grib_get_double(h,"dataTime",&metaptr[msgcount+1*nmsg]),0);
       GRIB_CHECK(grib_get_double(h,"step",    &metaptr[msgcount+2*nmsg]),0);
-      /* Check perturbationNumber. Load if key exists, else set to -1 */
+      /* Check perturbationNumber. Load if key exists, else set to 0 */
       int check = grib_get_double(h,"perturbationNumber",&metaptr[msgcount+3*nmsg]);
       if ( check == 0 ) {
          GRIB_CHECK(grib_get_double(h,"perturbationNumber",&metaptr[msgcount+3*nmsg]),0);
-      } else { metaptr[msgcount+3*nmsg] = -1; }
+      } else { metaptr[msgcount+3*nmsg] = 0; }
 
       /* Load shortname, typeOfLevel, and level */
       grib_get_long(h,"level",&level);

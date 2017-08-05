@@ -19,11 +19,11 @@ checking whether a station lies outside the extent of the gribfile!
    bilinear( file, stations, reshape=FALSE )
 }
 \arguments{
-   \item{file}{Character string. File name of the grib file to be used.}
+   \item{file}{\code{character} string. File name of the grib file to be used.}
    \item{stations}{A \code{SpatialPointsDataFrame} which has at least to
       include one variable \code{statnr}. Can be either one single station
       or multiple statoins.}
-   \item{reshape}{Logical, default \code{FALSE}. If \code{FALSE} a long
+   \item{reshape}{\code{logical}, default \code{FALSE}. If \code{FALSE} a long
       format will be returned. If \code{reshape=TRUE} a list of \code{data.frames}
       will be returned, each of it in a wide format (see details).}
 }
@@ -38,7 +38,8 @@ If \code{reshape=TRUE} a \code{list} of \code{data.frame}s will be returned.
 Each list element is a \code{data.frame} in the wide format and contains the
 interpolated data for one specific station (see list element name).  The rows
 of the \code{data.frame}s correspond to a specific datetime and variable, the
-columns itself contain the individual members.
+columns itself contain the individual members if the source file is an ensemble
+and the perturbationNumber is defined in the grib message head.
 
 Some additional attributes are attached to the result object such as 
 \code{shortName}, \code{level}, and \code{typeOfLevel} from the grib meta
@@ -61,6 +62,19 @@ package version was used to perform the interpolation (see attributes
    x2 <- bilinear(file,stations,reshape=TRUE)
    print(head(x2[[1]]))
    print(names(x2))
+
+   # Testing different file types which are included in the
+   # package. ECMWF data are anonymized (dates randomly changed
+   # to when I've updated this package the last time).
+   dir   <- paste(path.package("getgrib"),"data",sep="/")
+   files <- list.files(dir,"^.*(grib|grib2)")
+   for ( file in files ) {
+      cat(sprintf(" * Testing file \"\%s\"",file))
+      x1 <- bilinear(sprintf("\%s/\%s",dir,file),stations)
+      print(head(x1))
+      x2 <- bilinear(sprintf("\%s/\%s",dir,file),stations,reshape=TRUE)
+      print(head(x2[[1]]))
+   }
 }
 \seealso{
    \code{\link{gribdata2raster}},

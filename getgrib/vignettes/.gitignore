@@ -1,3 +1,4 @@
 
 # ignore pdf files
 *.pdf
+*.tex
