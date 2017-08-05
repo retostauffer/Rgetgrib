@@ -5,6 +5,13 @@
 * FOR WHAT:   R/grib file interaction (using grib_api fortran code)
 * WHO:        Reto Stauffer
 * WHEN:       End of Mai 2016
+* UPDATED:    August 2017
+
+# Requirements
+
+Requires an installation of the ECMWF GRIB\_API library.
+This package has been tested on a Linux system with
+GRIB\_API release version 1.19 and R version 3.3.1.
 
 # R Package to Directly Read From Grib Files
 
@@ -20,7 +27,7 @@ Over the time the R package getgrib got some updates and
 extensions, and some methods have been replaced and/or removed by better,
 faster, or more flexible methods (written in C/Fortran/R). 
 
-The package also contains a vignette ``overview.pdf`` which shows an
+The package also contains a vignette called [overview.pdf](overview.pdf) which shows an
 overview over the different functionalities which are currently implemented.
 
 
