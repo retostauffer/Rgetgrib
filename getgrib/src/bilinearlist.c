@@ -306,6 +306,9 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
       grib_handle_delete(h);
    }
 
+   /* Release grib file */ 
+   fclose( in );
+
    /* Construct result list from variables containing the results */
    SEXP res   = PROTECT(allocVector(VECSXP,    5));  ++nprotected;
    SEXP names = PROTECT(Rf_allocVector(STRSXP, 5));  ++nprotected;
