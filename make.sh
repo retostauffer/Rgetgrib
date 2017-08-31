@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2017-02-24, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-08-05 13:20 on thinkreto
+# - L@ST MODIFIED: 2017-08-31 10:14 on pc24-c707
 # -------------------------------------------------------------------
 
 # SASCHA VSC # # Load modules
@@ -49,9 +49,9 @@ else
 fi
 
 printf " BUILDING PACKAGE: getgrib\n"
-R CMD build getgrib
-cp getgrib/vignettes/overview.pdf .
-#R CMD build --no-build-vignettes getgrib
+###R CMD build getgrib
+###cp getgrib/vignettes/overview.pdf .
+R CMD build --no-build-vignettes getgrib
 if [ $? -ne 0 ] ; then
     printf "\n\nerror building package\n\n"; exit 9
 fi

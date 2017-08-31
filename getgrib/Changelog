@@ -1,0 +1,6 @@
+Version 1.2-6
+=============
+Added ``in = NULL;`` to set the file handler pointer to ``NULL``
+which led to a ulim porblem when processing 1000+ grib files.
+
+
