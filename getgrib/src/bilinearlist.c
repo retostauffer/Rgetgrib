@@ -309,6 +309,7 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
 
    /* Release grib file */ 
    fclose( in );
+   in = NULL;
 
    /* Construct result list from variables containing the results */
    SEXP res   = PROTECT(allocVector(VECSXP,    5));  ++nprotected;
@@ -327,7 +328,7 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
    SET_VECTOR_ELT(res, 4, meta_ltype);
 
    /* Release allocated memory and unprotect variables */ 
-   free(values); free(lons); free(lats);
+   free(values);    free(lons); free(lats);
    UNPROTECT(nprotected);
 
    /* Return results vector */
