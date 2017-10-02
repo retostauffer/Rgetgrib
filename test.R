@@ -4,6 +4,18 @@ library("getgrib")
 library("sp")
 
 
+library("Profcast")
+
+statlist <- Profcast::stations("LOWW")
+statlist <- subset(statlist, as.character(dmas_sensor) == "Windprofiler")
+statlist$statnr <- 666
+
+
+x <- bilinear("sf.grib",statlist)
+
+
+stop("devel stop here")
+
 load('stationlist.rda')
 
 file <- "t2m.grib"

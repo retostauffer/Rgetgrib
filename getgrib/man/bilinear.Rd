@@ -16,7 +16,7 @@ checking whether a station lies outside the extent of the gribfile!
 }
 \usage{
    ## Basic usage
-   bilinear( file, stations, reshape=FALSE )
+   bilinear( file, stations, reshape=FALSE, levels=FALSE )
 }
 \arguments{
    \item{file}{\code{character} string. File name of the grib file to be used.}
@@ -26,6 +26,8 @@ checking whether a station lies outside the extent of the gribfile!
    \item{reshape}{\code{logical}, default \code{FALSE}. If \code{FALSE} a long
       format will be returned. If \code{reshape=TRUE} a list of \code{data.frames}
       will be returned, each of it in a wide format (see details).}
+   \item{levels}{\code{logical}, default \code{FALSE}. If \code{TRUE} levels from
+      grib files will be returned in resulting \code{data.frame}.}
 }
 \details{
 Performs bilinar interpolation using C function and the GRIBAPI.

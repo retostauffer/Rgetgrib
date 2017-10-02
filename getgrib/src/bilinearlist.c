@@ -148,6 +148,7 @@ int intArrayMin(int * x, int n) {
    return( min );
 }
 
+
 /* -------------------- MAIN FUNCTION ------------------- */
 SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP statlat,
       SEXP verbose)

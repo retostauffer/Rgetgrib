@@ -15,7 +15,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-04-24 08:09 on thinkreto
+# - L@ST MODIFIED: 2017-10-02 07:39 on thinkreto
 # -------------------------------------------------------------------
 
 bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
@@ -28,7 +28,7 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
    if ( ! class(stations) == "SpatialPointsDataFrame" )
       stop("Input 'stations' must be of type SpatialPointsDataFrame")
    if ( ! 'statnr' %in% names(stations) )
-      stop("Input 'statoins' must contain stations$statnr (integer).")
+      stop("Input 'stations' must contain stations$statnr (integer).")
 
    # Perform bilinear interpolation
    res <- .Call("grib_bilinear_interpolation",
@@ -38,6 +38,7 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
                 as.integer(verbose), PACKAGE="getgrib")
 
    colnames(res$meta) <- c("init","runhour","step","member")
+
    res$meta           <- as.data.frame(res$meta)
    colnames(res$data) <- sprintf("station_%d",stations$statnr)
 
@@ -88,6 +89,7 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
 
 # Manipulate variable names
 manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
+
    # Manipulte t2 and d2
    idx <- which( grepl("^2t$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "t2m"
@@ -98,6 +100,11 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    idx <- which( grepl("^isobaricInhPa$",typeOfLevel) )
    if ( length(idx) > 0 )
       shortName[idx] <- sprintf("%s%d",shortName[idx],level[idx])
+
+   # For hybrid levels (model level data)
+   idx <- which( grepl("^hybrid$",typeOfLevel) )
+   if ( length(idx) > 0 )
+      shortName[idx] <- sprintf("%s_%d",shortName[idx],level[idx])
 
    return( matrix(shortName,ncol=1,dimnames=list(NULL,'shortName')) )
 
