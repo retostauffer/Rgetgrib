@@ -15,7 +15,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-10-02 07:39 on thinkreto
+# - L@ST MODIFIED: 2017-10-23 08:22 on thinkreto
 # -------------------------------------------------------------------
 
 bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
@@ -30,6 +30,10 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
    if ( ! 'statnr' %in% names(stations) )
       stop("Input 'stations' must contain stations$statnr (integer).")
 
+   if ( class(stations$statnr) == "character" ) {
+      stations$statnr <- factor(stations$statnr)
+   }
+      
    # Perform bilinear interpolation
    res <- .Call("grib_bilinear_interpolation",
                 as.character(file),
@@ -40,7 +44,7 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
    colnames(res$meta) <- c("init","runhour","step","member")
 
    res$meta           <- as.data.frame(res$meta)
-   colnames(res$data) <- sprintf("station_%d",stations$statnr)
+   colnames(res$data) <- sprintf("%s", as.character(stations$statnr))
 
    # Replace missing values with NA
    idx <- which(res$data == -9999., arr.ind=TRUE)

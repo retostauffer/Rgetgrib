@@ -48,6 +48,9 @@ Some additional attributes are attached to the result object such as
 information, and some information when and with which \code{\link{getdata}}
 package version was used to perform the interpolation (see attributes
 \code{created} (time when and \code{package_version}).
+
+Sincd October 2017 \code{stations$statnr} can also be of type \code{character}
+or \code{factor}. The column name of the return should be adjusted correspondingly.
 }
 \examples{
    # Find package installation path including the demo grib file

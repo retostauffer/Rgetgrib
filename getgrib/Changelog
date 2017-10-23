@@ -1,3 +1,11 @@
+Version 1.2-7
+=============
+Function ``bilinear'' still requires a SpatialPointsDataFrame
+as input with a column called ``statnr''. This ``statnr'' can
+now also be of type factor or character. If numeric, the resulting
+column mames will be of type ``station_XXX'', else the character
+string or level name from the statnr column.
+
 Version 1.2-6
 =============
 Added ``in = NULL;`` to set the file handler pointer to ``NULL``

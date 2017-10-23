@@ -5,7 +5,7 @@
 * FOR WHAT:   R/grib file interaction (using grib_api fortran code)
 * WHO:        Reto Stauffer
 * WHEN:       End of Mai 2016
-* UPDATED:    August 2017
+* UPDATED:    October 2017 to v1.2-7
 
 # Requirements
 
