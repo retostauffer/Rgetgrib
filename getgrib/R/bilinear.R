@@ -15,7 +15,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-10-23 08:31 on thinkreto
+# - L@ST MODIFIED: 2017-10-23 17:08 on thinkreto
 # -------------------------------------------------------------------
 
 bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
@@ -103,6 +103,11 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    if ( length(idx) > 0 ) shortName[idx] <- "t2m"
    idx <- which( grepl("^2d$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "d2m"
+   # Same with 100u and 100v
+   idx <- which( grepl("^100u$",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- "u100"
+   idx <- which( grepl("^100v$",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- "v100"
 
    # For variables on isobaricInHectopascal add level 
    idx <- which( grepl("^isobaricInhPa$",typeOfLevel) )
