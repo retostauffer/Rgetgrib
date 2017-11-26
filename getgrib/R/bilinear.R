@@ -15,7 +15,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-10-23 17:08 on thinkreto
+# - L@ST MODIFIED: 2017-11-26 12:34 on thinkreto
 # -------------------------------------------------------------------
 
 bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
@@ -55,7 +55,10 @@ bilinear <- function(file,stations,verbose=FALSE,reshape=FALSE) {
    if ( nrow(idx) > 0 ) res$data[idx] <- NA
 
    # compute init date and valid date and add as POSIXct
-   res$meta$init    <- strptime(res$meta$init,"%Y%m%d") + res$meta$runhour*3600
+   # Warning: ECMWF returns 'runhour' for 12 UTC as 1200 rather than
+   # 12 as other centres. Decide here what to do.
+   if ( max(res$meta$runhour) > 24 ) res$meta$runhour <- res$meta$runhour / 100
+   res$meta$init    <- strptime(res$meta$init,"%Y%m%d") + (res$meta$runhour)*3600
    res$meta$runhour <- res$meta$init + res$meta$step * 3600
    names(res$meta)[which(names(res$meta)=="runhour")] <- "valid"
 
@@ -104,6 +107,12 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    idx <- which( grepl("^2d$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "d2m"
    # Same with 100u and 100v
+   idx <- which( grepl("^10fg$",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- "fg10"
+   idx <- which( grepl("^10u$",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- "u10"
+   idx <- which( grepl("^10v$",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- "v10"
    idx <- which( grepl("^100u$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "u100"
    idx <- which( grepl("^100v$",shortName) )
