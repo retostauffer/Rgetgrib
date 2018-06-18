@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-04-20 10:30 on thinkreto
+# - L@ST MODIFIED: 2018-06-18 16:36 on marvin
 # -------------------------------------------------------------------
 
 
@@ -57,6 +57,9 @@ print.gribdata <- function(x,...) {
 # Reading data from grib file
 # -------------------------------------------------------------------
 getdata <- function(file,what,scale) {
+   # Stop if file does not exist
+   stopifnot(file.exists(file))
+   # ...
    if ( missing(what) ) what <- NULL
    if ( is.character(what) | is.null(what) ) {
       return( getdataByShortName(file,what=what[1L],scale) )
