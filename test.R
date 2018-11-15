@@ -10,4 +10,9 @@ stations <- SpatialPointsDataFrame(data.frame(lon = 11.2, lat = 47.6),
 
 gribfile <- "test.grb2"
 
+
+gg <- getdata(gribfile) 
+print(str(gg))
+stop()
+
 print( bilinear(gribfile, stations))
