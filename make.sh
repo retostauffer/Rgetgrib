@@ -1,5 +1,3 @@
-#!/bin/bash
-# -------------------------------------------------------------------
 # - NAME:        make.sh
 # - AUTHOR:      Reto Stauffer
 # - DATE:        2017-02-24
@@ -9,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2017-02-24, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2017-10-02 07:41 on thinkreto
+# - L@ST MODIFIED: 2018-08-23 17:25 on marvin
 # -------------------------------------------------------------------
 
 # SASCHA VSC # # Load modules
@@ -43,6 +41,12 @@ host=`hostname`
 if [ $host == "meteo-data.uibk.ac.at" ] ; then
    export PKG_FCFLAGS="-L/opt/local_libs/lib -I/opt/local_libs/include -lgrib_api_f90 -lgrib_api"
    export PKG_LIBS="-L/opt/local_libs/lib -I/opt/local_libs/include -lgrib_api_f90 -lgrib_api"
+elif [ $host == "marvin" ] ; then
+   EC="/home/retos/Workingdirectory/Rodeo2/libs/eccodes-2.8.2"
+   export PKG_FCFLAGS="-static-libgfortran -I${EC}/include"
+   export PKG_LIBS="-L${EC}/lib -leccode"
+   LD_LIBRARY_PATH=`$LD_LIBRARY_PATH`
+   export LD_LIBRARY_PATH=$EC/lib:${LD_LIBRARY_PATH}
 else
    export PKG_FCFLAGS="-static-libgfortran -L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
    export PKG_LIBS="-L/usr -I/usr/include -lgrib_api_f90 -lgrib_api"
