@@ -7,7 +7,7 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2016-09-29, RS: Created file on thinkreto.
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2018-06-18 16:36 on marvin
+# - L@ST MODIFIED: 2018-11-15 14:01 on marvin
 # -------------------------------------------------------------------
 
 
@@ -56,7 +56,7 @@ print.gribdata <- function(x,...) {
 # -------------------------------------------------------------------
 # Reading data from grib file
 # -------------------------------------------------------------------
-getdata <- function(file,what,scale) {
+getdata <- function(file, what, scale) {
    # Stop if file does not exist
    stopifnot(file.exists(file))
    # ...
@@ -94,6 +94,7 @@ getdataByShortName <- function(file,what,scale) {
    # that this function stops the script if not all grids
    # inside the grib file do have the same specification!
    Freturn <- .Fortran('getgridinfo',file,as.integer(rep(0,6)),PACKAGE='getgrib')
+   #Freturn <- setNames(Freturn[[2]], c("Ni", "Nj", "step", "members", "initdates", "inittimes"))
    # Estracting required information
    dimension      <- Freturn[[2]][1:2]
    nsteps         <- as.integer(Freturn[[2]][3])

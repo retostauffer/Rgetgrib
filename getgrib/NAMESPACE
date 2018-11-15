@@ -6,6 +6,7 @@ export(
    "rbind",
    "getdata",
    "grib_ls",
+   "readgrib",
    "getnearest",
    "bilinear",
    "get_grid_increments",

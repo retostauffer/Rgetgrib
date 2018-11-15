@@ -115,11 +115,11 @@ subroutine getgridinfo(GRBFILE, IINFO)
    call codes_index_create(idx,GRBFILE,'perturbationNumber')
    IINFO(4) = GIGS(idx,'perturbationNumber')
 
-   ! Count number of different perturbations (ensemble)
+   ! Initial dates
    call codes_index_create(idx,GRBFILE,'dataDate')
    IINFO(5) = GIGS(idx,'dataDate')
 
-   ! Count number of different perturbations (ensemble)
+   ! Initial times
    call codes_index_create(idx,GRBFILE,'dataTime')
    IINFO(6) = GIGS(idx,'dataTime')
 
@@ -257,7 +257,7 @@ subroutine getgriddataByShortName(GRBFILE,SHORTNAME,META,VALUES,NELEM,NROWS)
 
    ! Getting first grib message
    call codes_index_create(idx,GRBFILE,'shortName')
-   call codes_index_select(idx,'shortName',trim(SHORTNAME))
+   call codes_index_select(idx, 'shortName', trim(SHORTNAME))
 
    ! Allocate two dummy vectors (required for loading data)
    allocate(lats(NELEM))
