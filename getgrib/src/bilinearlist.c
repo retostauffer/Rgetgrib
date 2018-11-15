@@ -7,7 +7,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <grib_api.h>
+//#include <grib_api.h>
+#include <eccodes.h>
 
 /* Search for closest north east grid point */
 int closest_northeast(double stnlon, double stnlat, int n,
@@ -234,7 +235,7 @@ SEXP grib_bilinear_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP 
    ///h = grib_handle_new_from_file(0,in,&err);
    msgcount = 0;
    while ( (h = grib_handle_new_from_file(0,in,&err)) != NULL ) {
-   
+
       /* Getting size of the message */
       GRIB_CHECK(grib_get_size(h,"values",&values_len),0);
       if ( verboseptr[0] >= 2 ) { Rprintf(" * Grib message size: %d\n",values_len); }
