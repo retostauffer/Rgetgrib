@@ -93,8 +93,7 @@ int _getgrib_check_step_in_array_(long stp, long *steps, size_t n) {
  *      something >0 if there problems occured and the check failed.
  * @param TODO ...
  */
-void _getgrib_check_grib_fields_(const char *file, SEXP unique_keys,
-        SEXP steps_req, int *check)
+void _getgrib_check_grib_fields_(const char *file, SEXP unique_keys, int *check)
 {
 
     ///* Variables for ecCodes */
@@ -201,14 +200,18 @@ void _getgrib_check_grib_info_(codes_handle *msg, const char *file, double *ref)
  *      grib files will be returned.
  * @param 
  */
-SEXP getgrib_readgrib(SEXP gribfile, SEXP unique_keys, SEXP steps_req, SEXP check)
+SEXP getgrib_loadgrib(SEXP gribfile, SEXP unique_keys, 
+        SEXP req_shortName, SEXP req_level, SEXP req_step,
+        SEXP check)
 {
 
-    const char *file         = NULL;
-    int        nfiles        = length(gribfile);
-    double     *steps_reqptr = REAL(steps_req);
-    int        *checkptr     = INTEGER(check);
+    const char *file          = NULL;
+    char *sn            = NULL;
+    int        nfiles         = length(gribfile);
 
+    int        *req_stepptr   = INTEGER(req_step);
+    int        *req_levelptr  = INTEGER(req_level);
+    int        *checkptr      = INTEGER(check);
 
 
     /* Inde s is used to iterate over steps, (i,j) over grid positions, 
@@ -242,30 +245,50 @@ SEXP getgrib_readgrib(SEXP gribfile, SEXP unique_keys, SEXP steps_req, SEXP chec
     int    *grbcheck = NULL;
     grbcheck = malloc(sizeof(int) * nfiles);
 
-    if ( checkptr[0] ) {
-        for (f = 0; f < nfiles; f++) {
-            /* Indexing the current file (extract file name, create grib index,
-             * append file to index) */
-            grbidx = codes_index_new(0, "step", &ret);
-            file = CHAR(STRING_ELT(gribfile, f));
-            Rprintf("Checking %s\r", file);
-            ret  = codes_index_add_file(grbidx, file);
-            if ( ret ) { Rprintf("error: %s\n", codes_get_error_message(ret)); exit(ret); }
 
-            /* Perform some grib file checks (checking content to be unique and
-             * extracting the steps to be read) */
-            _getgrib_check_grib_fields_(file, unique_keys, steps_req, &grbcheck[f]);
+    /* Cout messages we have to read */
+    grbidx = codes_index_new(0, "level,step,shortName", &ret);
+    for (f = 0; f < nfiles; f++) {
 
-            /* Problem? */
-            if ( grbcheck[f] != 0 ) {
-                Rprintf("Problem: grib check failed for \"%s\"\n", file); exit(9);
-            }
-
-            /* Release grib indes */
-            codes_index_delete(grbidx);
-        }
-        Rprintf("\nAll %d independent grib file checks look ok\n", nfiles);
+        /* Indexing the current file (extract file name, create grib index,
+         * append file to index) */
+        file = CHAR(STRING_ELT(gribfile, f));
+        ret  = codes_index_add_file(grbidx, file);
+        if ( ret ) { Rprintf("error: %s\n", codes_get_error_message(ret)); exit(ret); }
     }
+
+    /* Filtering index */
+    codes_index_select_long(grbidx, "step",  req_stepptr[0]);
+    codes_index_select_long(grbidx, "level", req_levelptr[0]);
+    sn = CHAR(STRING_ELT(req_shortName,0));
+    codes_index_select_string(grbidx, "shortName", sn);
+    while (( msg = codes_handle_new_from_index(grbidx, &err)) != NULL ) { ++totalmsgcount; }
+    codes_index_delete(grbidx);
+
+    //if ( checkptr[0] ) {
+    //    for (f = 0; f < nfiles; f++) {
+    //        /* Indexing the current file (extract file name, create grib index,
+    //         * append file to index) */
+    //        grbidx = codes_index_new(0, "step", &ret);
+    //        file = CHAR(STRING_ELT(gribfile, f));
+    //        Rprintf("Checking %s\r", file);
+    //        ret  = codes_index_add_file(grbidx, file);
+    //        if ( ret ) { Rprintf("error: %s\n", codes_get_error_message(ret)); exit(ret); }
+
+    //        /* Perform some grib file checks (checking content to be unique and
+    //         * extracting the steps to be read) */
+    //        _getgrib_check_grib_fields_(file, unique_keys, &grbcheck[f]);
+
+    //        /* Problem? */
+    //        if ( grbcheck[f] != 0 ) {
+    //            Rprintf("Problem: grib check failed for \"%s\"\n", file); exit(9);
+    //        }
+
+    //        /* Release grib indes */
+    //        codes_index_delete(grbidx);
+    //    }
+    //    Rprintf("\nAll %d independent grib file checks look ok\n", nfiles);
+    //}
 
     /* Looping over the messages and read data from grib file */
     long ostep, oN;
@@ -283,115 +306,110 @@ SEXP getgrib_readgrib(SEXP gribfile, SEXP unique_keys, SEXP steps_req, SEXP chec
      * namely the domain size, resolution, and variable. If they do
      * not match the script will stop (before we get strange output) */
 
-    /* Looping over the files */
+    /* Cout messages we have to read */
+    grbidx = codes_index_new(0, "level,step,shortName", &ret);
     for (f = 0; f < nfiles; f++) {
 
+        /* Indexing the current file (extract file name, create grib index,
+         * append file to index) */
         file = CHAR(STRING_ELT(gribfile, f));
-        grb  = fopen(file, "r");
-        codes_count_in_file(NULL, grb, &msgcount);
-        totalmsgcount += msgcount;
-        Rprintf("Number of messages in file %s %d (total): %d\n", file, msgcount, totalmsgcount);
-        fclose(grb);
-
+        ret  = codes_index_add_file(grbidx, file);
+        if ( ret ) { Rprintf("error: %s\n", codes_get_error_message(ret)); exit(ret); }
     }
 
+    /* Filtering index */
+    codes_index_select_long(grbidx, "step",  req_stepptr[0]);
+    codes_index_select_long(grbidx, "level", req_levelptr[0]);
+    sn = CHAR(STRING_ELT(req_shortName,0));
+    codes_index_select_string(grbidx, "shortName", sn);
 
     /* Looping over the files */
     m = 0;
-    for (f = 0; f < nfiles; f++) {
+    while (( msg = codes_handle_new_from_index(grbidx, &err)) != NULL ) {
         
-        /* Re-open grib file */
-        file = CHAR(STRING_ELT(gribfile, f));
-        grb  = fopen(file, "r");
-        codes_count_in_file(NULL, grb, &msgcount);
-
-        /* Frontend information */
-        Rprintf("Reading data from \"%s\"\r", file);
-
-        while (( msg = codes_handle_new_from_file(0, grb, PRODUCT_GRIB, &err)) != NULL ) {
-
-            /* Load grid dimension once */
-            if ( Ni < 0. ) {
-                /* First field read, extract reference field information */
-                Rprintf("Reading grib field info (reference)\n");
-                grbinfo = _getgrib_get_grib_info_(msg);
-                /* Reading grid dimension (only once) */
-                codes_get_long(msg, "Ni", &Ni);
-                codes_get_long(msg, "Nj", &Nj);
-                /* Create return array which takes up the steps */
-                rsteps      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rstepsptr   = REAL(rsteps);
-                rdates      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rdatesptr   = REAL(rdates);
-                rtimes      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rtimesptr   = REAL(rtimes);
-                rlevtype    = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rlevtypeptr = REAL(rlevtype);
-                rlev        = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rlevptr     = REAL(rlev);
-                rmember     = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
-                rmemberptr  = REAL(rmember);
-
-                rshortName   = PROTECT(allocVector(STRSXP, totalmsgcount)); ++nprotected;
-                rtypeOfLevel = PROTECT(allocVector(STRSXP, totalmsgcount)); ++nprotected;
-                /* Create return matrix which takes up the data */
-                rval    = PROTECT(Rf_alloc3DArray(REALSXP, Ni, Nj, totalmsgcount)); ++nprotected;
-                rvalptr = REAL(rval);
-                /* Create return matrices which will take up longitudes/latitudes */
-                rlon    = PROTECT(allocMatrix(REALSXP, Ni, Nj)); ++nprotected;
-                rlonptr = REAL(rlon);
-                rlat    = PROTECT(allocMatrix(REALSXP, Ni, Nj)); ++nprotected;
-                rlatptr = REAL(rlat);
-            } else {
-                _getgrib_check_grib_info_(msg, file, grbinfo);
-            }
-
-            /* Reading the daaataaa! */
-            iter = codes_grib_iterator_new(msg, 0, &err);
-            if ( err != CODES_SUCCESS ) CODES_CHECK(err, 0);
- 
-            /* Loop on all the lat/lon/values. */
-            k = 0;
-            koffset =  m * Ni * Nj; /////// + s * Ni * Nj;
-            while( codes_grib_iterator_next(iter, &lat, &lon, &value) ) {
-                /* Store data, longitude, and latitude (once) */
-                rvalptr[koffset + k] = value;
-                if ( storelonlat ) {
-                    rlonptr[k] = lon;
-                    rlatptr[k] = lat;
-                }
-                k++;
-            }
-
-            /* Setting step, initial date, and initial time */
+        /* Load grid dimension once */
+        if ( Ni < 0. ) {
+            /* First field read, extract reference field information */
+            Rprintf("Reading grib field info (reference)\n");
+            grbinfo = _getgrib_get_grib_info_(msg);
+            /* Reading grid dimension (only once) */
             codes_get_long(msg, "Ni", &Ni);
-            codes_get_long(msg, "dataDate", &odate);
-            codes_get_long(msg, "dataTime", &otime);
-            codes_get_long(msg, "step",     &ostep);
-            codes_get_long(msg, "indicatorOfTypeOfLevel", &olevtype);
-            codes_get_long(msg, "level",                  &olev);
-            codes_get_long(msg, "perturbationNumber",     &omember);
-            rtimesptr[m] = otime;
-            rdatesptr[m] = odate;
-            rstepsptr[m] = ostep;
-            rlevtypeptr[m] = olevtype;
-            rlevptr[m]     = olev;
-            rmemberptr[m]  = omember;
+            codes_get_long(msg, "Nj", &Nj);
+            /* Create return array which takes up the steps */
+            rsteps      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rstepsptr   = REAL(rsteps);
+            rdates      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rdatesptr   = REAL(rdates);
+            rtimes      = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rtimesptr   = REAL(rtimes);
+            rlevtype    = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rlevtypeptr = REAL(rlevtype);
+            rlev        = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rlevptr     = REAL(rlev);
+            rmember     = PROTECT(allocVector(REALSXP, totalmsgcount)); ++nprotected;
+            rmemberptr  = REAL(rmember);
 
-            /* Loading string values */
-            codes_get_string(msg, "shortName",  oshortName, &charlen);
-            SET_STRING_ELT(rshortName,  m, Rf_mkChar(oshortName));
-            ///codes_get_string(msg, "typeOfLevel",  otypeOfLevel, &charlen);
-            ///SET_STRING_ELT(rtypeOfLevel,  m, Rf_mkChar(otypeOfLevel));
-
-            storelonlat = 0;
-            codes_handle_delete(msg);
-
-            ++m; /* Increasing message counter */
+            rshortName   = PROTECT(allocVector(STRSXP, totalmsgcount)); ++nprotected;
+            rtypeOfLevel = PROTECT(allocVector(STRSXP, totalmsgcount)); ++nprotected;
+            /* Create return matrix which takes up the data */
+            rval    = PROTECT(Rf_alloc3DArray(REALSXP, Ni, Nj, totalmsgcount)); ++nprotected;
+            rvalptr = REAL(rval);
+            /* Create return matrices which will take up longitudes/latitudes */
+            rlon    = PROTECT(allocMatrix(REALSXP, Ni, Nj)); ++nprotected;
+            rlonptr = REAL(rlon);
+            rlat    = PROTECT(allocMatrix(REALSXP, Ni, Nj)); ++nprotected;
+            rlatptr = REAL(rlat);
+        } else {
+            _getgrib_check_grib_info_(msg, file, grbinfo);
         }
+
+        /* Reading the daaataaa! */
+        iter = codes_grib_iterator_new(msg, 0, &err);
+        if ( err != CODES_SUCCESS ) CODES_CHECK(err, 0);
+ 
+        /* Loop on all the lat/lon/values. */
+        k = 0;
+        koffset =  m * Ni * Nj; /////// + s * Ni * Nj;
+        while( codes_grib_iterator_next(iter, &lat, &lon, &value) ) {
+            /* Store data, longitude, and latitude (once) */
+            rvalptr[koffset + k] = value;
+            if ( storelonlat ) {
+                rlonptr[k] = lon;
+                rlatptr[k] = lat;
+            }
+            k++;
+        }
+
+        /* Setting step, initial date, and initial time */
+        codes_get_long(msg, "Ni", &Ni);
+        codes_get_long(msg, "dataDate", &odate);
+        codes_get_long(msg, "dataTime", &otime);
+        codes_get_long(msg, "step",     &ostep);
+        codes_get_long(msg, "indicatorOfTypeOfLevel", &olevtype);
+        codes_get_long(msg, "level",                  &olev);
+        codes_get_long(msg, "perturbationNumber",     &omember);
+        rtimesptr[m] = otime;
+        rdatesptr[m] = odate;
+        rstepsptr[m] = ostep;
+        rlevtypeptr[m] = olevtype;
+        rlevptr[m]     = olev;
+        rmemberptr[m]  = omember;
+
+        /* Loading string values */
+        codes_get_string(msg, "shortName",  oshortName, &charlen);
+        SET_STRING_ELT(rshortName,  m, Rf_mkChar(oshortName));
+        ///codes_get_string(msg, "typeOfLevel",  otypeOfLevel, &charlen);
+        ///SET_STRING_ELT(rtypeOfLevel,  m, Rf_mkChar(otypeOfLevel));
+
+        storelonlat = 0;
+        codes_handle_delete(msg);
+
+        ++m; /* Increasing message counter */
     }
     Rprintf("\n");
 
+    /* Release grib indes */
+    codes_index_delete(grbidx);
  
     //return R_NilValue;
     /* Construct result list from variables containing the results */

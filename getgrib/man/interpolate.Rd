@@ -1,42 +1,50 @@
-\name{bilinear}
-\alias{bilinear}
-\title{Bilinear Interpolation on Grib-Files for Multiple Stations}
+\name{interpolate}
+\alias{interpolate}
+\title{Grib-Files Interpolation for Multiple Stations (ecCodes based)}
 \description{
-Performing bilinear interpolation for a set of stations on the grib
-files directly. Rather than loading full fields from the grib file
-(as \code{\link{getdata}} does) the interpolation is performed within
-the C-code using the GRIBAPI.
+Performing interpolation for a set of stations on a (set of) grib file(s).
+Interpolation is coded in C using the ECMWF ecCodes library.
 
 Please note that this function is in an alpha state and currently designed
 to be able to rapidly interpolate ECMWF ensemble data which are on a regular
 longitude latitdue grid.
-
-TODO: not yet checking \code{missingValue} from the grib file. Not yet
-checking whether a station lies outside the extent of the gribfile!
 }
 \usage{
    ## Basic usage
-   bilinear( file, stations, reshape=FALSE, levels=FALSE )
+   interpolate(files, stations, method = "bilinear", reshape = FALSE, verbose = FALSE)
 }
 \arguments{
    \item{file}{\code{character} string. File name of the grib file to be used.}
    \item{stations}{A \code{SpatialPointsDataFrame} which has at least to
       include one variable \code{statnr}. Can be either one single station
       or multiple statoins.}
-   \item{reshape}{\code{logical}, default \code{FALSE}. If \code{FALSE} a long
+   \item{method}{string, one of \code{"bilinear"} or \code{"nearest"}. See
+       details.}
+   \item{reshape}{logical. If \code{FALSE} (default) a long
       format will be returned. If \code{reshape=TRUE} a list of \code{data.frames}
       will be returned, each of it in a wide format (see details).}
-   \item{levels}{\code{logical}, default \code{FALSE}. If \code{TRUE} levels from
-      grib files will be returned in resulting \code{data.frame}.}
+    \item{verbose}{logical or any value which can be converted to integer.
+        \code{FALSE} is equivalent to \code{0}, \code{TRUE} to \code{1}.
+        For different values different levels of verbosity will be used.
+        Currently implemented are \code{0}, \code{1}, \code{2} (very verbose).}
 }
 \details{
-Performs bilinar interpolation using C function and the GRIBAPI.
+Allows to perform bilinear interpolation or nearest neighbour interpolation
+(extraction) on grib files. Requires the ECMWF ecCodes library to be installed.
 
-If \code{reshape=FALSE} a \code{data.frame} will be returned where each
-row corresponds to one grib message. For each station one column will be
-added.
+If \code{method = "bilinear"} bilinear interpolation on the grid is performed.
+For \code{"bilinear"} if one of the four neighbouring grid points (NE, NW, SE, SW)
+cannot be found the station lies outside the defined field. In this case
+a constant value of \code{-9999} is returned.
+If \code{method = "nearest"} the nearest grid point will be returned. 
+For \code{"nearest"}: if a station lies further away than
+\code{sqrt(deltalon^2 + deltalat^2) * 1.05} the station is considered to lie
+outside the defined grid! In this case a constant value of \code{-9999} is
+returned.
 
-If \code{reshape=TRUE} a \code{list} of \code{data.frame}s will be returned.
+If \code{reshape = FALSE} a \code{data.frame} will be returned where each row
+corresponds to one grib message. For each station one column will be added.  If
+\code{reshape = TRUE} a \code{list} of \code{data.frame}s will be returned.
 Each list element is a \code{data.frame} in the wide format and contains the
 interpolated data for one specific station (see list element name).  The rows
 of the \code{data.frame}s correspond to a specific datetime and variable, the
@@ -62,11 +70,17 @@ or \code{factor}. The column name of the return should be adjusted corresponding
    stations <- SpatialPointsDataFrame(subset(stations,select=c(lon,lat)),
                data=subset(stations,select=statnr),proj4string=crs)
 
-   x1 <- bilinear(file,stations,reshape=FALSE)
+   x1 <- interpolate(file, stations, reshape = FALSE)
    print(head(x1))
-   x2 <- bilinear(file,stations,reshape=TRUE)
+   x2 <- interpolate(file, stations, reshape = TRUE)
    print(head(x2[[1]]))
    print(names(x2))
+
+   n1 <- interpolate(file, stations, method = "nearest", reshape = FALSE)
+   print(head(n1))
+   n2 <- interpolate(file, stations, method = "nearest", reshape = TRUE)
+   print(head(n2[[1]]))
+   print(names(n2))
 
    # Testing different file types which are included in the
    # package. ECMWF data are anonymized (dates randomly changed
@@ -75,9 +89,9 @@ or \code{factor}. The column name of the return should be adjusted corresponding
    files <- list.files(dir,"^.*(grib|grib2)")
    for ( file in files ) {
       cat(sprintf(" * Testing file \"\%s\"",file))
-      x1 <- bilinear(sprintf("\%s/\%s",dir,file),stations)
+      x1 <- interpolate(sprintf("\%s/\%s",dir,file),stations)
       print(head(x1))
-      x2 <- bilinear(sprintf("\%s/\%s",dir,file),stations,reshape=TRUE)
+      x2 <- interpolate(sprintf("\%s/\%s",dir,file),stations,reshape=TRUE)
       print(head(x2[[1]]))
    }
 }

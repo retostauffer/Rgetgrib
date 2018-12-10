@@ -12,15 +12,21 @@ load_all("getgrib")
 
 gribfile <- "test.grb2"
 gribfile <- "eceps.grib"
-gribfile <- "/home/retos/Workingdirectory/SnowSAMOS/gribfiles/SnowPaperHindcast_201703060000.grib"
+#gribfile <- "/home/retos/Workingdirectory/SnowSAMOS/gribfiles/SnowPaperHindcast_201703060000.grib"
+bl <- interpolate(gribfile, stations, method = "bilinear") #, reshape = TRUE)
+print(head(bl))
+load_all("getgrib"); nn <- interpolate(gribfile, stations, method = "nearest", verbose = 2)
+stop()
 
 
-x <- readgrib(gribfile)
-print(str(x))
 
+stop(" --- devel stop ----")
 gribfiles <- c("/home/retos/Workingdirectory/SnowSAMOS/gribfiles/SnowPaperHindcast_201703060000.grib",
                "/home/retos/Workingdirectory/SnowSAMOS/gribfiles/SnowPaperHindcast_201703160000.grib")
-x2 <- readgrib(gribfiles)
+
+x2 <- readgrib(gribfiles, shortName = "2t", level = 0, steps = 12, check = FALSE)
+print(dim(x2$data))
+print(x2$step)
 stop('---- devel ----')
 
 

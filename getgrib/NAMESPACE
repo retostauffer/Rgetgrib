@@ -3,12 +3,11 @@
 export(
    "gribdata2raster",
    "deaccumulate",
-   "rbind",
    "getdata",
    "grib_ls",
    "readgrib",
-   "getnearest",
-   "bilinear",
+   ###"getnearest",
+   "interpolate",
    "get_grid_increments",
    "is_regular_ll_grid"
 )
