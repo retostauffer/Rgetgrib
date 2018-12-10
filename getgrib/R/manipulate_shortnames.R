@@ -13,7 +13,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2018-12-10 20:38 on marvin
+# - L@ST MODIFIED: 2018-12-10 21:33 on marvin
 # -------------------------------------------------------------------
 
 # Manipulate variable names
@@ -25,16 +25,16 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    idx <- which( grepl("^2d$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "d2m"
    # Same with 100u and 100v
-   idx <- which( grepl("^10fg$",shortName) )
+   idx <- which( grepl("^(10fg|10fg3)$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "fg10"
    idx <- which( grepl("^10u$",shortName) )
-   if ( length(idx) > 0 ) shortName[idx] <- "u10"
+   if ( length(idx) > 0 ) shortName[idx] <- "u10m"
    idx <- which( grepl("^10v$",shortName) )
-   if ( length(idx) > 0 ) shortName[idx] <- "v10"
+   if ( length(idx) > 0 ) shortName[idx] <- "v10m"
    idx <- which( grepl("^100u$",shortName) )
-   if ( length(idx) > 0 ) shortName[idx] <- "u100"
+   if ( length(idx) > 0 ) shortName[idx] <- "u100m"
    idx <- which( grepl("^100v$",shortName) )
-   if ( length(idx) > 0 ) shortName[idx] <- "v100"
+   if ( length(idx) > 0 ) shortName[idx] <- "v100m"
 
    # For variables on isobaricInHectopascal add level 
    idx <- which( grepl("^isobaricInhPa$",typeOfLevel) )
