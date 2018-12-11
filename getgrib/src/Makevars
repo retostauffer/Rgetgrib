@@ -7,10 +7,6 @@
 
 # For Unix systems
 # Path where eccodes is installed
-PKG_FCFLAGS = -L/usr/local/lib -I/usr/local/include
+PKG_FCFLAGS = -L/usr/local/lib -I/usr/lib -I/usr/local/include -I/usr/include
 # Append library 'eccodes' and 'eccodes_f90' when compiling
 PKG_LIBS = -leccodes -leccodes_f90
-
-##FCFLAGS = -L/usr/local/lib -I/usr/local/include
-### Append library 'eccodes' when compiling
-##LIBS = -leccodes
