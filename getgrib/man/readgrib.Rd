@@ -32,6 +32,7 @@
         \item \code{level} level of the variable(s)
         \item \code{member} member (ensemble member) if needed. Else \code{0}.
     }
+}
 \value{
     Returns a list with the data and a set of meta information
     from the grib file meta data. See 'Details' section for more
