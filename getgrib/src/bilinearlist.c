@@ -70,7 +70,7 @@ int closest_northwest(double stnlon, double stnlat, int n,
 /* Computes euclidean distance */
 double compute_distance(double x1,double x2,double y1,double y2) {
    double res;
-   res = sqrt(pow(x1-x2,2.) + pow(y1-y2,2.));
+   res = sqrt(pow(x1-x2, 2.) + pow(y1-y2, 2.));
    return res;
 }
 /* Given station location stnlon and stnlat this function searches for the

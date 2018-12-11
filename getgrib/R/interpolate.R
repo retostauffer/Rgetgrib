@@ -15,24 +15,28 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2018-12-10 21:28 on marvin
+# - L@ST MODIFIED: 2018-12-11 10:50 on marvin
 # -------------------------------------------------------------------
 
-interpolate <- function(file, stations, method = "bilinear", reshape = FALSE, verbose = FALSE) {
+interpolate <- function(file, stations, method = "bilinear",
+                        k = 4, p = 1.0, reshape = FALSE,
+                        corr.lat = TRUE, verbose = FALSE) {
 
     
     # Station
-    method <- match.arg(method, c("bilinear", "nearest"))
+    method <- match.arg(method, c("bilinear", "nearest", "idw"))
 
     # Check input
+    if ( ! inherits(corr.lat, "logical") )
+        stop("Input 'corr.lat' has to be logical TRUE or FALSE")
     if ( ! inherits(file, "character") )
-       stop("Input 'file' has to be a character string.")
+        stop("Input 'file' has to be a character string.")
     if ( ! file.exists(file) )
-       stop(sprintf("Cannot find file \"%s\"",file))
+        stop(sprintf("Cannot find file \"%s\"",file))
     if ( ! inherits(stations, "SpatialPointsDataFrame") )
-       stop("Input 'stations' must be of type SpatialPointsDataFrame")
+        stop("Input 'stations' must be of type SpatialPointsDataFrame")
     if ( ! 'statnr' %in% names(stations) )
-       stop("Input 'stations' must contain stations$statnr (integer).")
+        stop("Input 'stations' must contain stations$statnr (integer).")
  
     if ( class(stations$statnr) == "character" ) {
        stations$statnr <- factor(stations$statnr)
@@ -46,10 +50,34 @@ interpolate <- function(file, stations, method = "bilinear", reshape = FALSE, ve
                      stations@coords[,"lon"],stations@coords[,"lat"],
                      as.integer(verbose), PACKAGE="getgrib")
     } else if ( method == "nearest" ) {
-        res <- .Call("grib_nearest_interpolation",
+        # Calling the C routine
+        res <- .Call("grib_idw_interpolation",
                      as.character(file),
                      as.numeric(stations$statnr),
-                     stations@coords[,"lon"],stations@coords[,"lat"],
+                     as.numeric(stations@coords[,"lon"]),
+                     as.numeric(stations@coords[,"lat"]),
+                     k = as.integer(1), p = as.numeric(1), as.integer(1),
+                     as.integer(verbose), PACKAGE="getgrib")
+    } else if ( method == "idw" ) {
+
+        # Checking optional parameters for k nearest neighbour interpolation
+        k <- try(as.integer(k))
+        if ( inherits(k, "try-error") )
+            stop(sprintf("For method = \"%s\" a proper value (integer) for k has to be provided.", method))
+        if ( ! inherits(p, "numeric") )
+            stop(paste(sprintf("For method = \"%s\" ", method),
+                       "a proper value (positive numeric) for p has to be provided."))
+        if ( p < 0 )
+            stop(paste(sprintf("For method = \"%s\" ", method),
+                       "a proper value (positive numeric) for p has to be provided."))
+
+        # Calling the C routine
+        res <- .Call("grib_idw_interpolation",
+                     as.character(file),
+                     as.numeric(stations$statnr),
+                     as.numeric(stations@coords[,"lon"]),
+                     as.numeric(stations@coords[,"lat"]),
+                     k = k, p = as.numeric(p), as.integer(corr.lat),
                      as.integer(verbose), PACKAGE="getgrib")
     }
     colnames(res$meta) <- c("init","runhour","step","member")

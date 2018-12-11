@@ -1,8 +1,8 @@
 Package: getgrib
 Type: Package
-Title: Getting Nearest Neighbors of a Grib(1) File Via ecCodes Library
-Version: 2.0-1
-Date: 2018-11-15
+Title: Getting Data from Grib Files using R via ecCodes
+Version: 2.0-3
+Date: 2018-12-12
 Author: Reto Stauffer
 Maintainer: Reto Stauffer <reto.stauffer@uibk.ac.at>
 Description: Some grib file handling functions using the ECMWF ecCodes grib handling library.
