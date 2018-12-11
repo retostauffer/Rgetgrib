@@ -5,7 +5,11 @@ Version: 2.0-3
 Date: 2018-12-12
 Author: Reto Stauffer
 Maintainer: Reto Stauffer <reto.stauffer@uibk.ac.at>
-Description: Some grib file handling functions using the ECMWF ecCodes grib handling library.
+Description: Provides a set of methods and function to read data from grib1 and
+    grib2 files based on the ECMWF ecCodes library. Developed on ecCodes Version
+    2.9.2. One of the core functions is the interpolate method which allows to
+    perform bilinear and inverse distance weighting and nearest neighbour
+    interpolation for a set of stations/locations.
 Depends: R (>= 3.3.0), raster, sp
 Suggetsts: zoo
 License: GPL-2

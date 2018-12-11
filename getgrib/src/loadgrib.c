@@ -213,7 +213,6 @@ SEXP getgrib_loadgrib(SEXP gribfile, SEXP unique_keys,
     int        *req_levelptr  = INTEGER(req_level);
     int        *checkptr      = INTEGER(check);
 
-
     /* Inde s is used to iterate over steps, (i,j) over grid positions, 
      * k is a general loop index, f to loop over files. */
     int f, i, j, k, m, s, t;
@@ -260,7 +259,7 @@ SEXP getgrib_loadgrib(SEXP gribfile, SEXP unique_keys,
     /* Filtering index */
     codes_index_select_long(grbidx, "step",  req_stepptr[0]);
     codes_index_select_long(grbidx, "level", req_levelptr[0]);
-    sn = CHAR(STRING_ELT(req_shortName,0));
+    sn = CHAR(STRING_ELT(req_shortName, 0));
     codes_index_select_string(grbidx, "shortName", sn);
     while (( msg = codes_handle_new_from_index(grbidx, &err)) != NULL ) { ++totalmsgcount; }
     codes_index_delete(grbidx);

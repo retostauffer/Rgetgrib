@@ -13,7 +13,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2018-12-10 21:33 on marvin
+# - L@ST MODIFIED: 2018-12-11 11:20 on marvin
 # -------------------------------------------------------------------
 
 # Manipulate variable names
@@ -35,6 +35,16 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    if ( length(idx) > 0 ) shortName[idx] <- "u100m"
    idx <- which( grepl("^100v$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "v100m"
+
+   # For variables on tropopause niveau
+   idx <- which( grepl("^tropopause$",typeOfLevel) )
+   if ( length(idx) > 0 )
+      shortName[idx] <- sprintf("%s_tropo",shortName[idx],level[idx]/100)
+
+   # For variables on pressureFromGroundLayer
+   idx <- which( grepl("^pressureFromGroundLayer$",typeOfLevel) )
+   if ( length(idx) > 0 )
+      shortName[idx] <- sprintf("%s%dhPa_agl",shortName[idx],level[idx]/100)
 
    # For variables on isobaricInHectopascal add level 
    idx <- which( grepl("^isobaricInhPa$",typeOfLevel) )
