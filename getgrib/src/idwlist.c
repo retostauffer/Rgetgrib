@@ -270,9 +270,9 @@ SEXP grib_idw_interpolation(SEXP gribfile, SEXP statnr, SEXP statlon, SEXP statl
         /* Maximum distance allowed before expecting that a station
          * is outside the defined grid */
         if ( Kptr[0] == 1 ) {
-            maxdist = sqrt(deltalon * deltalon + deltalat * deltalat) * 0.55;
+            maxdist = sqrt(deltalon * deltalon + deltalat * deltalat) * 1.00;
         } else {
-            maxdist = sqrt(deltalon * deltalon + deltalat * deltalat) * 2.00;
+            maxdist = sqrt(deltalon * deltalon + deltalat * deltalat) * 4.00;
         }
         if ( verboseptr[0] >= 2 ) {
             Rprintf("Maximum distance to considered \"in grid\": %.5f degrees\n", maxdist);
