@@ -13,7 +13,7 @@
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
 # -------------------------------------------------------------------
-# - L@ST MODIFIED: 2018-12-11 11:20 on marvin
+# - L@ST MODIFIED: 2020-02-05 10:25 on marvin
 # -------------------------------------------------------------------
 
 # Manipulate variable names
@@ -24,9 +24,13 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    if ( length(idx) > 0 ) shortName[idx] <- "t2m"
    idx <- which( grepl("^2d$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "d2m"
+   idx <- which( grepl("^10fg$",shortName) )
+   # Renaming gusts: 10fg -> fg10m
+   # Aggregated gusts: 10fg3 -> fg10m_3
+   if ( length(idx) > 0 ) shortName[idx] <- "fg10m"
+   idx <- which( grepl("^10fg",shortName) )
+   if ( length(idx) > 0 ) shortName[idx] <- gsub("^10fg", "fg10m_", shortName[idx])
    # Same with 100u and 100v
-   idx <- which( grepl("^(10fg|10fg3)$",shortName) )
-   if ( length(idx) > 0 ) shortName[idx] <- "fg10"
    idx <- which( grepl("^10u$",shortName) )
    if ( length(idx) > 0 ) shortName[idx] <- "u10m"
    idx <- which( grepl("^10v$",shortName) )
