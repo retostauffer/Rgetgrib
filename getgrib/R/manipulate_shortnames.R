@@ -12,8 +12,8 @@
 # -------------------------------------------------------------------
 # - EDITORIAL:   2017-04-22, RS: Created file on thinkreto.
 #                2017-04-23, RS: NA handling for stations outside grid
-# -------------------------------------------------------------------
-# - L@ST MODIFIED: 2020-02-05 10:25 on marvin
+#                2021-03-02, RS: Adding 'unknown' as level for cloud
+#                            cover if level not identified.
 # -------------------------------------------------------------------
 
 # Manipulate variable names
@@ -54,6 +54,11 @@ manipulate_shortnames <- function( shortName, level, typeOfLevel ) {
    idx <- which( grepl("^isobaricInhPa$",typeOfLevel) )
    if ( length(idx) > 0 )
       shortName[idx] <- sprintf("%s%d",shortName[idx],level[idx])
+
+   # Different cc levels not properly identifyable
+   idx <- which(grepl("^unknown$",typeOfLevel) & grepl("^[tml]cc$", shortName))
+   if (length(idx) > 0)
+	   shortName[idx] <- sprintf("%s_%s", shortName[idx], typeOfLevel[idx])
 
    # For hybrid levels (model level data)
    idx <- which( grepl("^hybrid$",typeOfLevel) )
